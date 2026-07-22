@@ -22,3 +22,8 @@ ANDROID_HOME=/path/to/android-sdk \
 The device probe installs only the production release APK and invokes its smoke-test provider. The
 provider executes the scenario synchronously and returns the result. There is no test APK that could
 accidentally keep the API under test or use a different core-library-desugaring map.
+
+Set `rruleGroup` and `rruleRepositoryUrl` to point this same fixture at the
+public JitPack coordinate. The post-release distribution workflow uses those
+properties to verify the hosted Android variant without changing the smoke
+contract.

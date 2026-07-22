@@ -1,6 +1,14 @@
 Third-party notices
 
-The following notices apply to selected regression-test material.
+The following notices apply to binary dependencies and selected regression-test
+material.
+
+---
+
+The native RRuleKmpCore framework statically links the Kotlin/Native runtime,
+the Kotlin standard library, and kotlinx-datetime. Kotlin and kotlinx-datetime
+are licensed under the Apache License, Version 2.0. The licence and the notices
+required for Kotlin/Native binaries are provided in the LICENSES directory.
 
 ---
 

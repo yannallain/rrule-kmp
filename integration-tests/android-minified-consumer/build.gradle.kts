@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val rruleGroup = providers.gradleProperty("rruleGroup").orElse("io.github.yallain")
 val rruleVersion = providers.gradleProperty("rruleVersion").orElse("0.1.0")
 
 android {
@@ -44,6 +45,6 @@ kotlin {
 }
 
 dependencies {
-    implementation("io.github.yallain:rrule-kmp:${rruleVersion.get()}")
+    implementation("${rruleGroup.get()}:rrule-kmp:${rruleVersion.get()}")
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

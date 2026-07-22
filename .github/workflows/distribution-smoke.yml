@@ -1,0 +1,338 @@
+name: Distribution smoke
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published numeric release version, for example 0.1.0
+        required: true
+        type: string
+
+concurrency:
+  group: >-
+    distribution-smoke-${{
+      github.event.release.tag_name || inputs.version
+    }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  jitpack-jvm-android:
+    name: JitPack JVM and Android R8 consumers
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RELEASE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+    steps:
+      - name: Check out the exact release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ env.RELEASE_VERSION }}
+          persist-credentials: false
+
+      - name: Validate the release tag
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Release versions must use numeric SemVer, for example 0.1.0." >&2
+            exit 64
+          fi
+          git show-ref --verify --quiet "refs/tags/$RELEASE_VERSION"
+          test "$(git rev-parse HEAD)" = \
+            "$(git rev-parse "refs/tags/$RELEASE_VERSION^{commit}")"
+
+      - name: Isolate the Gradle user home
+        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-jitpack-jvm-android" >> "$GITHUB_ENV"
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+        with:
+          cache-disabled: true
+
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Wait for the JitPack publication
+        run: |
+          pom_url="https://jitpack.io/com/github/yannallain/rrule-kmp/$RELEASE_VERSION/rrule-kmp-$RELEASE_VERSION.pom"
+          pom_file="$RUNNER_TEMP/rrule-kmp-$RELEASE_VERSION.pom"
+
+          for attempt in $(seq 1 20); do
+            status="$(
+              curl \
+                --location \
+                --silent \
+                --show-error \
+                --max-time 30 \
+                --output "$pom_file" \
+                --write-out '%{http_code}' \
+                "$pom_url" || true
+            )"
+            if [[ "$status" == "200" ]]; then
+              echo "JitPack publication is available after attempt $attempt."
+              break
+            fi
+            if [[ "$attempt" == "20" ]]; then
+              echo "JitPack publication did not become available: $pom_url" >&2
+              exit 1
+            fi
+            echo "JitPack returned HTTP $status; retrying in 30 seconds."
+            sleep 30
+          done
+
+          grep -F "<version>$RELEASE_VERSION</version>" "$pom_file"
+
+      - name: Verify the remote JVM publication
+        run: |
+          ./gradlew -p integration-tests/published-kmp-consumer \
+            -PrruleGroup=com.github.yannallain \
+            -PrruleRepositoryUrl=https://jitpack.io \
+            -PrruleVersion="$RELEASE_VERSION" \
+            --no-build-cache \
+            --refresh-dependencies \
+            clean \
+            jvmTest
+
+      - name: Verify the remote Android publication with R8
+        run: |
+          ./gradlew -p integration-tests/android-minified-consumer \
+            -PrruleGroup=com.github.yannallain \
+            -PrruleRepositoryUrl=https://jitpack.io \
+            -PrruleVersion="$RELEASE_VERSION" \
+            --no-build-cache \
+            --refresh-dependencies \
+            clean \
+            assembleRelease
+
+  jitpack-apple:
+    name: JitPack Kotlin/Native consumers
+    needs: jitpack-jvm-android
+    runs-on: macos-26
+    timeout-minutes: 35
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      RELEASE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+    steps:
+      - name: Check out the exact release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ env.RELEASE_VERSION }}
+          persist-credentials: false
+
+      - name: Validate the release tag and Apple toolchain
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Release versions must use numeric SemVer, for example 0.1.0." >&2
+            exit 64
+          fi
+          git show-ref --verify --quiet "refs/tags/$RELEASE_VERSION"
+          test "$(git rev-parse HEAD)" = \
+            "$(git rev-parse "refs/tags/$RELEASE_VERSION^{commit}")"
+          test -d "$DEVELOPER_DIR"
+          test "$(xcodebuild -version | sed -n '1p')" = "Xcode 26.6"
+          xcodebuild -version
+          swift --version
+
+      - name: Isolate the Gradle user home
+        run: echo "GRADLE_USER_HOME=$RUNNER_TEMP/gradle-jitpack-apple" >> "$GITHUB_ENV"
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+        with:
+          cache-disabled: true
+
+      - name: Verify every remote Apple KLIB publication
+        run: |
+          ./gradlew -p integration-tests/published-kmp-consumer \
+            -PrruleGroup=com.github.yannallain \
+            -PrruleRepositoryUrl=https://jitpack.io \
+            -PrruleVersion="$RELEASE_VERSION" \
+            --no-build-cache \
+            --refresh-dependencies \
+            clean \
+            compileKotlinIosX64 \
+            compileKotlinIosArm64 \
+            compileKotlinIosSimulatorArm64
+
+  spm:
+    name: Remote Swift Package Manager consumer
+    runs-on: macos-26
+    timeout-minutes: 35
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      RELEASE_VERSION: ${{ github.event.release.tag_name || inputs.version }}
+    steps:
+      - name: Check out the exact release tag
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: refs/tags/${{ env.RELEASE_VERSION }}
+          persist-credentials: false
+
+      - name: Validate the release tag and Apple toolchain
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Release versions must use numeric SemVer, for example 0.1.0." >&2
+            exit 64
+          fi
+          git show-ref --verify --quiet "refs/tags/$RELEASE_VERSION"
+          test "$(git rev-parse HEAD)" = \
+            "$(git rev-parse "refs/tags/$RELEASE_VERSION^{commit}")"
+          test -d "$DEVELOPER_DIR"
+          test "$(xcodebuild -version | sed -n '1p')" = "Xcode 26.6"
+          xcodebuild -version
+          swift --version
+          xcrun --sdk iphoneos --show-sdk-version
+          xcrun --sdk iphonesimulator --show-sdk-version
+
+      - name: Verify the published XCFramework asset
+        run: |
+          asset_name="RRuleKmpCore-$RELEASE_VERSION.xcframework.zip"
+          asset_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_VERSION/$asset_name"
+          sums_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_VERSION/SHA256SUMS"
+          archive="$RUNNER_TEMP/$asset_name"
+          sums="$RUNNER_TEMP/SHA256SUMS"
+
+          curl \
+            --fail \
+            --location \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 10 \
+            --max-time 300 \
+            --output "$archive" \
+            "$asset_url"
+          curl \
+            --fail \
+            --location \
+            --retry 12 \
+            --retry-all-errors \
+            --retry-delay 10 \
+            --max-time 300 \
+            --output "$sums" \
+            "$sums_url"
+
+          expected_checksum="$(
+            awk -v asset="$asset_name" '$2 == asset { print $1 }' "$sums"
+          )"
+          actual_checksum="$(shasum -a 256 "$archive" | awk '{ print $1 }')"
+          swift_checksum="$(swift package compute-checksum "$archive")"
+
+          if [[ ! "$expected_checksum" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "SHA256SUMS has no valid entry for $asset_name." >&2
+            exit 1
+          fi
+          test "$actual_checksum" = "$expected_checksum"
+          test "$swift_checksum" = "$expected_checksum"
+          unzip -tq "$archive"
+          grep -F "url: \"$asset_url\"" Package.swift
+          grep -F "checksum: \"$expected_checksum\"" Package.swift
+          swift package dump-package >/dev/null
+
+      - name: Resolve the exact remote Swift package from a clean cache
+        env:
+          RRULE_KMP_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          RRULE_KMP_VERSION: ${{ env.RELEASE_VERSION }}
+        run: |
+          consumer="integration-tests/swift-package-consumer"
+          swift package --package-path "$consumer" dump-package \
+            > "$RUNNER_TEMP/remote-consumer-package.json"
+          jq -e \
+            --arg repository "$RRULE_KMP_REPOSITORY_URL" \
+            --arg version "$RELEASE_VERSION" '
+              any(
+                .dependencies[].sourceControl[];
+                (.location.remote[0].urlString == $repository) and
+                (.requirement.exact[0] == $version)
+              )
+            ' "$RUNNER_TEMP/remote-consumer-package.json"
+
+          (
+            cd "$consumer"
+            xcodebuild -resolvePackageDependencies \
+              -scheme RRuleKitRemoteConsumer \
+              -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm-clones" \
+              -packageCachePath "$RUNNER_TEMP/spm-package-cache"
+          )
+
+          remote_checkout="$(
+            find "$RUNNER_TEMP/spm-clones" \
+              -type d \
+              -path '*/checkouts/rrule-kmp' \
+              -print \
+              -quit
+          )"
+          if [[ -z "$remote_checkout" ]]; then
+            echo "SwiftPM did not create the expected remote checkout." >&2
+            exit 1
+          fi
+
+          test "$(git -C "$remote_checkout" rev-parse HEAD)" = "$(git rev-parse HEAD)"
+          git -C "$remote_checkout" tag --points-at HEAD \
+            | grep -Fx "$RELEASE_VERSION"
+
+          resolved_file="$(
+            find "$consumer" -type f -name Package.resolved -print -quit
+          )"
+          if [[ -z "$resolved_file" ]]; then
+            echo "SwiftPM did not write Package.resolved." >&2
+            exit 1
+          fi
+          jq -e --arg version "$RELEASE_VERSION" '
+            any(
+              (.pins // .object.pins)[];
+              ((.identity // .package) == "rrule-kmp") and
+              (.state.version == $version)
+            )
+          ' "$resolved_file"
+
+      - name: Build the remote package for a generic iOS simulator
+        env:
+          RRULE_KMP_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          RRULE_KMP_VERSION: ${{ env.RELEASE_VERSION }}
+        run: |
+          (
+            cd integration-tests/swift-package-consumer
+            xcodebuild clean build \
+              -scheme RRuleKitRemoteConsumer \
+              -configuration Release \
+              -destination 'generic/platform=iOS Simulator' \
+              -derivedDataPath "$RUNNER_TEMP/spm-simulator-derived-data" \
+              -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm-clones" \
+              -packageCachePath "$RUNNER_TEMP/spm-package-cache" \
+              ONLY_ACTIVE_ARCH=NO \
+              CODE_SIGNING_ALLOWED=NO
+          )
+
+      - name: Build the remote package for a generic iOS device
+        env:
+          RRULE_KMP_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          RRULE_KMP_VERSION: ${{ env.RELEASE_VERSION }}
+        run: |
+          (
+            cd integration-tests/swift-package-consumer
+            xcodebuild clean build \
+              -scheme RRuleKitRemoteConsumer \
+              -configuration Release \
+              -destination 'generic/platform=iOS' \
+              -derivedDataPath "$RUNNER_TEMP/spm-device-derived-data" \
+              -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm-clones" \
+              -packageCachePath "$RUNNER_TEMP/spm-package-cache" \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO
+          )

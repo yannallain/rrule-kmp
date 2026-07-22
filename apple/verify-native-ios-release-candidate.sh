@@ -5,8 +5,8 @@ set -euo pipefail
 readonly release_version="${1:-}"
 readonly simulator_udid="${IOS_SIMULATOR_UDID:-}"
 
-if [[ ! "$release_version" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]]; then
-    echo "Usage: IOS_SIMULATOR_UDID=<udid> $0 <numeric-release-version>" >&2
+if [[ ! "$release_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+    echo "Usage: IOS_SIMULATOR_UDID=<udid> $0 <major.minor.patch>" >&2
     exit 64
 fi
 if [[ -z "$simulator_udid" ]]; then
@@ -79,7 +79,12 @@ cd "$repository_root"
 
 ANDROID_HOME="$android_sdk_directory" \
 ANDROID_SDK_ROOT="$android_sdk_directory" \
-    ./gradlew clean check checkKotlinAbi
+    ./gradlew \
+        clean \
+        check \
+        checkKotlinAbi \
+        :apple:rrule-kit:iosSimulatorArm64Test \
+        :apple:rrule-kit:checkKotlinAbi
 
 mkdir -p "$verification_directory"
 
@@ -101,6 +106,11 @@ if [[ ! -f "$package_directory/THIRD_PARTY_NOTICES" ]]; then
     exit 1
 fi
 cmp "$repository_root/THIRD_PARTY_NOTICES" "$package_directory/THIRD_PARTY_NOTICES"
+if [[ ! -d "$package_directory/LICENSES" ]]; then
+    echo "Prepared Swift package is missing binary dependency licences" >&2
+    exit 1
+fi
+diff -r "$repository_root/LICENSES" "$package_directory/LICENSES"
 forbidden_package_path="$(find "$package_directory" \
     \( -name .build -o -name .swiftpm -o -name .DS_Store -o -name '*.xcresult' \
        -o -name '*.xcworkspace' -o -name DerivedData \) \

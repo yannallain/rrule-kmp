@@ -1,16 +1,23 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
 
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.bundling.Zip
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.kover)
     `maven-publish`
 }
 
-group = "io.github.yallain"
+group = providers.gradleProperty("PUBLICATION_GROUP").orElse("io.github.yallain").get()
 version = providers.gradleProperty("VERSION_NAME").orElse("0.1.0-SNAPSHOT").get()
+
+val localBuildRepositoryDirectory = providers
+    .gradleProperty("LOCAL_PUBLICATION_REPOSITORY")
+    .map(::file)
+    .orElse(layout.buildDirectory.dir("repository").map { it.asFile })
 
 kotlin {
     explicitApi()
@@ -78,7 +85,13 @@ val verifyEmbeddedLegalFiles by tasks.registering {
     val embeddedNotices = layout.projectDirectory.file(
         "src/commonMain/resources/META-INF/THIRD_PARTY_NOTICES-rrule-kmp",
     )
+    val rootLicenses = layout.projectDirectory.dir("LICENSES")
+    val embeddedLicenses = layout.projectDirectory.dir(
+        "src/commonMain/resources/META-INF/LICENSES/rrule-kmp",
+    )
     inputs.files(rootLicense, embeddedLicense, rootNotices, embeddedNotices)
+    inputs.dir(rootLicenses)
+    inputs.dir(embeddedLicenses)
 
     doLast {
         check(rootLicense.asFile.readBytes().contentEquals(embeddedLicense.asFile.readBytes())) {
@@ -87,11 +100,37 @@ val verifyEmbeddedLegalFiles by tasks.registering {
         check(rootNotices.asFile.readBytes().contentEquals(embeddedNotices.asFile.readBytes())) {
             "The embedded third-party notices must exactly match the root notice file."
         }
+        val rootLicenseFiles = rootLicenses.asFile.walkTopDown()
+            .filter(File::isFile)
+            .associateBy { it.relativeTo(rootLicenses.asFile).invariantSeparatorsPath }
+        val embeddedLicenseFiles = embeddedLicenses.asFile.walkTopDown()
+            .filter(File::isFile)
+            .associateBy { it.relativeTo(embeddedLicenses.asFile).invariantSeparatorsPath }
+        check(rootLicenseFiles.keys == embeddedLicenseFiles.keys) {
+            "Embedded binary dependency licence paths must match the root LICENSES directory."
+        }
+        rootLicenseFiles.forEach { (relativePath, rootFile) ->
+            check(rootFile.readBytes().contentEquals(embeddedLicenseFiles.getValue(relativePath).readBytes())) {
+                "Embedded binary dependency licence differs from LICENSES/$relativePath."
+            }
+        }
     }
 }
 
 tasks.named("check") {
     dependsOn(verifyEmbeddedLegalFiles)
+}
+
+kover {
+    reports {
+        variant("jvm") {
+            verify {
+                rule {
+                    minBound(90)
+                }
+            }
+        }
+    }
 }
 
 // Java consumer tests compile against the same bytecode floor as the Kotlin/JVM artifact.
@@ -104,7 +143,7 @@ publishing {
         maven {
             // A deterministic, disposable repository for testing every generated publication.
             name = "localBuild"
-            setUrl(layout.buildDirectory.dir("repository"))
+            setUrl(localBuildRepositoryDirectory.get())
         }
     }
 
@@ -133,5 +172,43 @@ publishing {
                 developerConnection.set("scm:git:ssh://git@github.com/yannallain/rrule-kmp.git")
             }
         }
+    }
+}
+
+tasks.register<Zip>("zipMavenPublications") {
+    group = "distribution"
+    description = "Creates a reproducible archive of every KMP Maven publication."
+    dependsOn("publishAllPublicationsToLocalBuildRepository")
+
+    archiveFileName.set("rrule-kmp-${project.version}-maven-repository.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions/${project.version}"))
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+    val publicationGroupPath = project.group.toString().replace('.', '/')
+    from(localBuildRepositoryDirectory) {
+        into("repository")
+        // Module-level Maven metadata contains generation timestamps. A fixed-version
+        // offline repository needs only the immutable version directories.
+        include("$publicationGroupPath/**/${project.version}/**")
+    }
+    from(listOf("LICENSE", "THIRD_PARTY_NOTICES")) {
+        into("legal")
+    }
+    from("LICENSES") {
+        into("legal/LICENSES")
+    }
+}
+
+tasks.register<Zip>("zipReleaseLicenses") {
+    group = "distribution"
+    description = "Creates the legal-notice archive shipped with binary releases."
+
+    archiveFileName.set("rrule-kmp-${project.version}-licenses.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions/${project.version}"))
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+    from("LICENSE", "THIRD_PARTY_NOTICES")
+    from("LICENSES") {
+        into("LICENSES")
     }
 }

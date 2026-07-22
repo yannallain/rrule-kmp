@@ -1,0 +1,17 @@
+jdk:
+  - openjdk21
+
+before_install:
+  - sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+install:
+  - >-
+    ./gradlew
+    -PPUBLICATION_GROUP="$GROUP"
+    -PVERSION_NAME="$VERSION"
+    :jvmTest
+    :testAndroidHostTest
+    :verifyEmbeddedLegalFiles
+    :checkKotlinAbi
+    :publishToMavenLocal
+    --no-configuration-cache

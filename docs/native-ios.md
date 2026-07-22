@@ -8,16 +8,60 @@
   an implementation detail behind a Foundation-native Swift facade.
 
 The separation keeps Kotlin `Sequence`, sealed hierarchies, and `kotlinx-datetime` types out of the
-supported Swift API. Once remote distribution is configured, it will also prevent a native iOS
-application from needing Java, Gradle, or the Kotlin toolchain after consuming the binary package.
+supported Swift API. A native iOS consumer needs only Xcode and Swift Package Manager: the Kotlin
+implementation is delivered as a prebuilt XCFramework.
 
-There is no remote Swift Package release today. The workflow below builds a generated local package
-from a source checkout and requires macOS, Xcode, JDK 17+, and a configured Android SDK for the
-repository's Gradle build. Run Gradle commands from the repository root.
+## Install with Swift Package Manager
+
+### Xcode
+
+Once `0.1.0` is published, add the package directly from GitHub:
+
+1. Choose **File → Add Package Dependencies**.
+2. Enter `https://github.com/yannallain/rrule-kmp.git`.
+3. Select **Exact Version** and enter `0.1.0`.
+4. Add the `RRuleKit` product to the application target.
+
+Then import the facade:
+
+```swift
+import RRuleKit
+```
+
+The package automatically downloads the release's checksum-verified XCFramework. Consumer
+applications do not need Java, Gradle, or a Kotlin toolchain.
+
+### Package.swift
+
+Swift packages can declare the same exact dependency in their manifest:
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/yannallain/rrule-kmp.git",
+        exact: "0.1.0"
+    ),
+],
+targets: [
+    .target(
+        name: "MyTarget",
+        dependencies: [
+            .product(name: "RRuleKit", package: "rrule-kmp"),
+        ]
+    ),
+]
+```
+
+The exact version becomes resolvable only after both the Git tag and its GitHub Release asset are
+published. The root [`Package.swift`](../Package.swift) is the public, remote-capable manifest. It
+combines the checked-in Foundation-native facade sources with the immutable XCFramework ZIP attached
+to that release.
 
 ## Local package development
 
-Build the release XCFramework and assemble the local package:
+Contributors can build the framework from source and use a generated local package. This path
+requires macOS, Xcode, JDK 21, and a configured Android SDK. Run Gradle commands from the repository
+root:
 
 ```shell
 ./gradlew :apple:rrule-kit:prepareLocalSwiftPackage
@@ -29,6 +73,9 @@ In Xcode, choose **File → Add Package Dependencies → Add Local** and select 
 ```swift
 import Foundation
 import RRuleKit
+
+let attendanceStart = Date(timeIntervalSince1970: 1_483_315_200)
+let attendanceEnd = attendanceStart.addingTimeInterval(12 * 60 * 60)
 
 let schedule = try RecurrenceSchedule(
     content: """
@@ -112,14 +159,16 @@ xcodebuild build-for-testing \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-The framework is compiled with a device deployment target of iOS 13 for older supported consumers.
-The current Kotlin/Native toolchain normally targets iOS 14, so the bridge uses its explicit
-lower-target override.
-Release CI must retain a real iOS 13 runtime or device lane; compiling with iOS 13 metadata alone
-does not replace runtime verification. Device arm64 and simulator x86_64 slices report iOS 13;
-simulator arm64 reports iOS 14, matching the first Apple-silicon simulator generation.
+The package declares iOS 13. The XCFramework contains device arm64 plus simulator arm64 and x86_64
+architectures. Device arm64 and simulator x86_64 slices report iOS 13; simulator arm64 reports
+iOS 14, matching the first Apple-silicon simulator generation.
 
-## Remote Swift Package releases
+The current release gate verifies compilation, linking, and metadata, but it does not run on a real
+iOS 13 runtime or device. Until that lane exists, iOS 13 is a compile/link compatibility target, not
+a fully runtime-certified claim. Publishing must not remove this caveat merely because the package
+manifest and framework metadata declare iOS 13.
+
+## Release packaging and publication
 
 Run the local native release-candidate gate with an available simulator. It performs the KMP and
 ABI checks, Swift tests, release-mode simulator and device builds, framework metadata and
@@ -130,8 +179,8 @@ IOS_SIMULATOR_UDID='<available-simulator-udid>' \
   ./apple/verify-native-ios-release-candidate.sh 0.1.0
 ```
 
-This local gate does not certify iOS 13 runtime compatibility. The protected release workflow must
-also pass on a real iOS 13 runtime/device before an artifact is promoted with an iOS 13 compatibility claim.
+This local gate does not certify iOS 13 runtime compatibility. A real iOS 13 runtime or device lane
+is still required before making an unqualified iOS 13 compatibility claim.
 
 Create the deterministic XCFramework ZIP for a release version:
 
@@ -143,32 +192,50 @@ swift package compute-checksum \
   build/distributions/0.1.0/RRuleKmpCore-0.1.0.xcframework.zip
 ```
 
-The checked-in manifest is intentionally a nested local-package fixture with a path-based binary
-target; this repository root cannot currently be added as a remote Swift dependency. Before release,
-choose either a dedicated Swift Package repository or a root package layout in this repository. Its
-tag must put a remote-capable `Package.swift` at the package root, expose the `RRuleKit` facade
-sources at the paths declared by that manifest, and carry the approved legal files.
+There are intentionally two Swift manifests:
 
-Publish the exact XCFramework ZIP at an immutable HTTPS URL. The tagged manifest then combines the
-facade sources with a remote binary target:
+- the root [`Package.swift`](../Package.swift) is the public manifest. Its binary target uses the
+  versioned GitHub Release URL and exact checksum;
+- [`apple/swift-package/Package.swift`](../apple/swift-package/Package.swift) is a development
+  fixture. `prepareLocalSwiftPackage` copies it into `build/swift-package` with a path-based
+  XCFramework, facade sources, tests, and legal files.
+
+For each release, run the hosted Release candidate workflow on `main` first. Its Xcode 26.6 archive
+and checksum are the authoritative inputs for the root manifest. A local archive built by another
+Xcode version is useful as a preflight, but is not a substitute for the hosted candidate. For
+`0.1.0`, the remote target is:
 
 ```swift
 .binaryTarget(
     name: "RRuleKmpCore",
-    url: "https://OWNER_HOST/RRuleKmpCore-0.1.0.xcframework.zip",
-    checksum: "SWIFTPM_CHECKSUM"
+    url: "https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/RRuleKmpCore-0.1.0.xcframework.zip",
+    checksum: "4c3e033ce33fb37ceed917d70d4b10cc7517320a7b874ec4c42058bc374af8f8"
 )
 ```
 
-The canonical package repository, binary host, release signing, and CI credentials are
-owner-supplied release inputs and are intentionally not invented by this repository.
-`prepareLocalSwiftPackage` and `zipRRuleKmpCoreReleaseXCFramework` produce build artifacts; they do
-not assemble a legally complete release package. Release staging must carry this repository's root
-[`LICENSE`](../LICENSE), [`THIRD_PARTY_NOTICES`](../THIRD_PARTY_NOTICES), and the required licence
-texts and notices for the statically linked Kotlin/Native runtime and `kotlinx-datetime`. Gate their
-presence and review a generated dependency-licence report before
-publishing. Before a tag is promoted, resolve the remote package from a clean native application
-and repeat simulator and generic-device builds.
+The protected release flow is deliberately staged:
+
+1. Dispatch the [Release candidate workflow](../.github/workflows/release-candidate.yml) for a
+   numeric three-part version from `main`. Download its deterministic XCFramework archive and
+   checksum produced with hosted Xcode 26.6.
+2. Put that exact release URL and checksum in the root manifest, update versioned documentation,
+   commit the changes, push `main`, and wait for every required CI job to pass.
+3. Dispatch the protected [Release workflow](../.github/workflows/release.yml) for the same version
+   and green `main` commit. Its read-only build job reproduces and verifies every asset. Only its
+   protected publish job can create the tag, attest the assets, and open the **draft** GitHub
+   Release.
+4. Review and publish the draft. Publishing starts the
+   [Distribution smoke workflow](../.github/workflows/distribution-smoke.yml), which resolves the
+   exact tag and release asset from clean Swift Package Manager caches and builds generic simulator
+   and device consumers.
+5. Keep the real iOS 13 runtime/device result with the release evidence. Hosted compile, link, and
+   metadata checks do not yet prove execution on iOS 13 itself.
+
+The draft includes `RRuleKmpCore-<version>.xcframework.zip`, `SHA256SUMS`, the project licence and
+third-party notices, and a complete licence archive. The generated local package also carries
+[`LICENSE`](../LICENSE), [`THIRD_PARTY_NOTICES`](../THIRD_PARTY_NOTICES), and [`LICENSES`](../LICENSES).
+These files provide the release inputs; their contents still require the project owner's final
+review before publication.
 
 The packaging follows the stable Objective-C framework/XCFramework route. Kotlin's direct Swift
 export remains experimental and is not used for the production surface. See Kotlin's

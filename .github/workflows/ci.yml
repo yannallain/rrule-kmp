@@ -1,0 +1,236 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  kotlin:
+    name: Kotlin, Android host, and JVM coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Verify Kotlin, Android host tests, ABI, and coverage
+        run: >-
+          ./gradlew
+          check
+          checkKotlinAbi
+          koverVerifyJvm
+          koverXmlReportJvm
+          koverHtmlReportJvm
+
+      - name: Verify the exact JitPack build and every KMP publication
+        run: |
+          jitpack_repository="$RUNNER_TEMP/jitpack-m2"
+          ./gradlew \
+            -Dmaven.repo.local="$jitpack_repository" \
+            -PPUBLICATION_GROUP=com.github.yannallain \
+            -PVERSION_NAME=0.0.0 \
+            :jvmTest \
+            :testAndroidHostTest \
+            :verifyEmbeddedLegalFiles \
+            :checkKotlinAbi \
+            :publishToMavenLocal \
+            --no-configuration-cache
+          ./gradlew -p integration-tests/published-kmp-consumer \
+            -PrruleGroup=com.github.yannallain \
+            -PrruleRepositoryUrl="file://$jitpack_repository" \
+            -PrruleVersion=0.0.0 \
+            --no-build-cache \
+            --refresh-dependencies \
+            clean \
+            jvmTest \
+            compileKotlinIosX64 \
+            compileKotlinIosArm64 \
+            compileKotlinIosSimulatorArm64
+
+      - name: Upload JVM coverage to Codecov
+        if: >-
+          github.event_name != 'pull_request' ||
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          use_oidc: true
+          files: build/reports/kover/reportJvm.xml
+          flags: jvm
+          fail_ci_if_error: true
+
+      - name: Preserve test and coverage reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: kotlin-test-and-coverage-reports
+          path: |
+            build/reports/tests/
+            build/test-results/
+            build/reports/kover/
+          if-no-files-found: warn
+          retention-days: 14
+
+  android-runtime:
+    name: Android runtime (API ${{ matrix.api-level }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level:
+          - 21
+          - 36
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Verify device tests and minified consumer
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: |
+            ./gradlew connectedAndroidDeviceTest
+            ./gradlew \
+              -PPUBLICATION_GROUP=com.github.yannallain \
+              -PVERSION_NAME=0.0.0 \
+              publishKotlinMultiplatformPublicationToLocalBuildRepository \
+              publishAndroidPublicationToLocalBuildRepository
+            ./gradlew -p integration-tests/android-minified-consumer \
+              -PrruleGroup=com.github.yannallain \
+              -PrruleVersion=0.0.0 \
+              assembleRelease
+            ./integration-tests/android-minified-consumer/verify-on-device.sh
+
+  apple:
+    name: Kotlin/Native and Swift
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Verify the Apple toolchain
+        run: |
+          test -d "$DEVELOPER_DIR"
+          test "$(xcodebuild -version | sed -n '1p')" = "Xcode 26.6"
+          xcodebuild -version
+          swift --version
+          xcrun --sdk iphoneos --show-sdk-version
+          xcrun --sdk iphonesimulator --show-sdk-version
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Validate remote Swift package manifest
+        run: swift package dump-package >/dev/null
+
+      - name: Select an available iPhone simulator
+        id: simulator
+        run: |
+          simulator_udid="$(
+            xcrun simctl list devices available -j \
+              | jq -r '[.devices[][] | select(.isAvailable == true) | select(.name | startswith("iPhone"))][0].udid'
+          )"
+          if [[ -z "$simulator_udid" || "$simulator_udid" == "null" ]]; then
+            echo "No available iPhone simulator was found." >&2
+            exit 1
+          fi
+          echo "udid=$simulator_udid" >> "$GITHUB_OUTPUT"
+
+      - name: Verify native release candidate
+        env:
+          IOS_SIMULATOR_UDID: ${{ steps.simulator.outputs.udid }}
+        run: ./apple/verify-native-ios-release-candidate.sh 0.0.0
+
+      - name: Verify the published Apple KLIB consumers
+        run: |
+          ./gradlew \
+            -PPUBLICATION_GROUP=com.github.yannallain \
+            -PVERSION_NAME=0.0.0 \
+            publishKotlinMultiplatformPublicationToLocalBuildRepository \
+            publishIosX64PublicationToLocalBuildRepository \
+            publishIosArm64PublicationToLocalBuildRepository \
+            publishIosSimulatorArm64PublicationToLocalBuildRepository
+          ./gradlew -p integration-tests/published-kmp-consumer \
+            -PrruleGroup=com.github.yannallain \
+            -PrruleVersion=0.0.0 \
+            --refresh-dependencies \
+            compileKotlinIosX64 \
+            compileKotlinIosArm64 \
+            compileKotlinIosSimulatorArm64
+
+      - name: Preserve native verification output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-verification-output
+          path: |
+            build/native-ios-verification/checksum.txt
+            build/native-ios-verification/package.json
+            build/native-ios-verification/simulator-tests/Logs/Test/*.xcresult/
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,5 +1,11 @@
 # rrule-kmp
 
+[![CI](https://github.com/yannallain/rrule-kmp/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yannallain/rrule-kmp/actions/workflows/ci.yml)
+[![JVM coverage](https://codecov.io/gh/yannallain/rrule-kmp/graph/badge.svg)](https://codecov.io/gh/yannallain/rrule-kmp)
+[![Release](https://img.shields.io/github/v/release/yannallain/rrule-kmp?sort=semver)](https://github.com/yannallain/rrule-kmp/releases/latest)
+[![JitPack](https://jitpack.io/v/yannallain/rrule-kmp.svg)](https://jitpack.io/#yannallain/rrule-kmp)
+[![License: MIT](https://img.shields.io/github/license/yannallain/rrule-kmp)](LICENSE)
+
 `rrule-kmp` is a Kotlin Multiplatform library for strict RFC 5545 recurrence-rule parsing, canonical serialization, lazy occurrence generation, and complete recurrence-set evaluation. Its implementation and tests are shared by JVM, Android, and iOS.
 
 The temporal model deliberately keeps four iCalendar concepts distinct:
@@ -11,56 +17,147 @@ The temporal model deliberately keeps four iCalendar concepts distinct:
 
 Expansion happens in calendar fields. Zoned candidates are resolved only after filters and `BYSETPOS` have been applied, so invalid dates and generated DST-gap candidates are skipped instead of normalized.
 
-## Availability and quick start
+## Installation
 
-The project is currently consumed from a source checkout: neither a public Maven repository nor a
-remote Swift Package release is configured yet. The project is available under the permissive
-[MIT License](LICENSE); canonical remote publication and signing still need to be configured.
-The local build commands require JDK 17+ and a configured Android SDK. Apple artifacts additionally
-require macOS and Xcode.
+The examples below pin `0.1.0`; use the version shown by the
+[latest release](https://github.com/yannallain/rrule-kmp/releases/latest) for production builds.
 
-- Generate version `0.1.0` of the root KMP metadata, JVM and Android artifacts, and iOS KLIBs in
-  `build/repository` with
-  `./gradlew -PVERSION_NAME=0.1.0 publishAllPublicationsToLocalBuildRepository`, then add that
-  directory as a Maven repository and depend on `io.github.yallain:rrule-kmp:0.1.0`.
-- Pure Swift consumers can run `./gradlew :apple:rrule-kit:prepareLocalSwiftPackage` and add the
-  generated `build/swift-package` directory to Xcode.
+### Kotlin Multiplatform, JVM, and Android with JitPack
 
-A KMP consumer can resolve the locally built artifact with:
+Add JitPack to dependency resolution in `settings.gradle.kts`. Keeping the repository content
+filter makes Gradle use JitPack only for this library:
 
 ```kotlin
 // settings.gradle.kts
 dependencyResolutionManagement {
     repositories {
-        maven { url = uri("/absolute/path/to/rrule-kmp/build/repository") }
         google()
         mavenCentral()
+        maven {
+            url = uri("https://jitpack.io")
+            content {
+                includeGroup("com.github.yannallain")
+            }
+        }
     }
 }
 ```
+
+For a Kotlin Multiplatform module, add the dependency to `commonMain`:
 
 ```kotlin
 // Shared module build.gradle.kts
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.yallain:rrule-kmp:0.1.0")
+            implementation("com.github.yannallain:rrule-kmp:0.1.0")
         }
     }
 }
 ```
 
-For a regular JVM or Android module, use the same repository and dependency coordinates:
+For a regular JVM or Android module, use the same coordinate:
 
 ```kotlin
 // JVM or Android module build.gradle.kts
 dependencies {
-    implementation("io.github.yallain:rrule-kmp:0.1.0")
+    implementation("com.github.yannallain:rrule-kmp:0.1.0")
 }
 ```
 
+Kotlin consumers should use Kotlin 2.3.20 or newer so their compiler can read
+the published metadata. The JVM and Android bytecode target remains Java 11.
+
+JitPack builds numbered Git tags on demand, so the first sync of a new version can take a little
+longer. Its Gradle module metadata selects the appropriate JVM, Android, or Kotlin Multiplatform
+variant. A pure native iOS application should use the Swift package below instead of consuming a
+Kotlin/Native KLIB directly.
+
 Android applications whose `minSdk` is below 26 must also enable the
 [desugaring setup](#android-api-2125-consumer-setup).
+
+### Native iOS with Swift Package Manager
+
+In Xcode, choose **File → Add Package Dependencies**, enter:
+
+```text
+https://github.com/yannallain/rrule-kmp.git
+```
+
+Select the exact version `0.1.0`, add the `RRuleKit` product to the application target, and import
+it from Swift:
+
+```swift
+import RRuleKit
+```
+
+For a package manifest, declare the package and product explicitly:
+
+```swift
+dependencies: [
+    .package(
+        url: "https://github.com/yannallain/rrule-kmp.git",
+        exact: "0.1.0"
+    ),
+],
+targets: [
+    .target(
+        name: "YourApp",
+        dependencies: [
+            .product(name: "RRuleKit", package: "rrule-kmp"),
+        ]
+    ),
+]
+```
+
+Swift Package Manager downloads the versioned
+`RRuleKmpCore-<version>.xcframework.zip` from the matching
+GitHub Release and builds the Foundation-native `RRuleKit` wrapper. No local Gradle build is needed
+for normal Swift consumption. The GitHub Release must be published rather than left as a draft so
+that Swift Package Manager can fetch its binary asset.
+
+See the [native iOS integration guide](docs/native-ios.md) for the Swift API, elapsed-duration
+example, local package development, and consumer verification.
+
+## Releases
+
+Each [GitHub Release](https://github.com/yannallain/rrule-kmp/releases) includes checksummed,
+attested artifacts for dependency-manager and manual integration workflows. For `0.1.0`:
+
+| Download | Intended use |
+| --- | --- |
+| [`RRuleKmpCore-0.1.0.xcframework.zip`](https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/RRuleKmpCore-0.1.0.xcframework.zip) | Binary consumed automatically by Swift Package Manager |
+| [`rrule-kmp-0.1.0-maven-repository.zip`](https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/rrule-kmp-0.1.0-maven-repository.zip) | All `rrule-kmp` Gradle/Maven publications for local or manual hosting (`com.github.yannallain:rrule-kmp:0.1.0`) |
+| [`rrule-kmp-android-0.1.0.aar`](https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/rrule-kmp-android-0.1.0.aar) | Standalone Android artifact |
+| [`rrule-kmp-jvm-0.1.0.jar`](https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/rrule-kmp-jvm-0.1.0.jar) | Standalone JVM artifact |
+| [`rrule-kmp-0.1.0-sources.jar`](https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/rrule-kmp-0.1.0-sources.jar) | Kotlin sources for IDE navigation and inspection |
+| [`rrule-kmp-0.1.0-licenses.zip`](https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/rrule-kmp-0.1.0-licenses.zip) | Project and bundled third-party notices |
+| [`SHA256SUMS`](https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/SHA256SUMS) | SHA-256 verification for every uploaded release asset except the checksum file itself |
+
+The release also carries top-level legal files, the Swift checksum and parsed
+manifest, and the exact hosted toolchain record used to build the binaries.
+
+For local or manually hosted Gradle use, extract the Maven archive and point a `maven` repository
+at its `repository` directory. The archive contains every `rrule-kmp` variant, but not third-party
+dependencies: retain Maven Central and Google, or provide those dependencies through your own
+mirror or cache. Prefer dependency-manager resolution over adding the standalone AAR or JAR
+directly, because Gradle then selects the right variant and dependencies automatically.
+
+Releases use a candidate-first workflow so the checksum committed to `Package.swift` is computed
+on the same hosted macOS and Xcode 26.6 toolchain used for publication. A maintainer first runs the
+[Release candidate workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/release-candidate.yml)
+on `main`, then commits its XCFramework checksum and waits for CI to pass. The protected
+[Release workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/release.yml) rebuilds
+from that green commit in a read-only job. Only after every check succeeds does its protected
+publish job create the numeric tag, artifact attestations, and draft GitHub Release.
+
+Publishing the draft starts the
+[Distribution smoke workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/distribution-smoke.yml).
+It resolves the public JitPack coordinates in standalone Gradle consumers and resolves the tagged
+Swift package with its released XCFramework. The assets and remote Swift package are publicly
+consumable only after the draft is published and those external systems can see the release.
+
+## Quick start
 
 ### Choose the right API
 
@@ -108,7 +205,15 @@ The project uses Kotlin 2.3.20, `kotlinx-datetime` 0.8.0, Gradle 9.4.1, and the 
 plugin. Targets are JVM 11+, Android API 21+, iOS device arm64, and iOS simulator arm64/x86_64. The
 Android AAR metadata declares consumer compile SDK 21+ and AGP 8.0+; the checked-in build uses AGP
 9.2.1 and compile SDK 36. Android consumers below API 26 must enable the desugaring setup documented
-below. Building or testing Apple targets requires macOS and Xcode.
+below.
+
+Building from a source checkout requires JDK 21, the checked-in Gradle wrapper, and an Android SDK
+with platform 36 configured through `ANDROID_HOME` or `local.properties`. Apple compilation and
+Swift tests additionally require macOS and Xcode. Release checksums are authoritative only when
+produced by the hosted release-candidate job with Xcode 26.6; another local Xcode version remains
+useful for development, but may not reproduce the release archive byte for byte. Gradle and JVM or
+Android consumers do not need Xcode. Native Swift consumers need only a compatible Xcode and Swift
+Package Manager, not Java, Gradle, Kotlin, or an Android SDK.
 
 This repository does not currently publish Kotlin/JS or Wasm artifacts. A web frontend therefore
 needs a dedicated RFC 5545 implementation while sharing payload and acceptance vectors with its
@@ -125,22 +230,58 @@ ABI baselines under `api/` are checked as part of `check`. All KMP Maven publica
 generated and inspected without an external repository:
 
 ```shell
-./gradlew check checkKotlinAbi
-./gradlew -PVERSION_NAME=0.1.0 publishAllPublicationsToLocalBuildRepository
+./gradlew check checkKotlinAbi koverVerifyJvm koverHtmlReportJvm
+./gradlew \
+  -PPUBLICATION_GROUP=com.github.yannallain \
+  -PVERSION_NAME=0.0.0 \
+  publishAllPublicationsToLocalBuildRepository
+
+./gradlew -p integration-tests/published-kmp-consumer \
+  -PrruleVersion=0.0.0 \
+  --refresh-dependencies \
+  jvmTest \
+  compileKotlinIosX64 \
+  compileKotlinIosArm64 \
+  compileKotlinIosSimulatorArm64
 ```
 
-The second command writes the root metadata, JVM JAR, Android AAR, and iOS klibs beneath
-`build/repository`. See [the release checklist](docs/releasing.md) for the external publication
-steps that remain before publishing outside this repository.
+The publish command writes JitPack-shaped root metadata, JVM JAR, Android AAR, and iOS KLIBs beneath
+`build/repository`. The standalone consumer then proves the external Gradle metadata, JVM runtime,
+and all three Apple variants without project substitution. See its
+[fixture documentation](integration-tests/published-kmp-consumer/README.md) and the
+[release checklist](docs/releasing.md) for the candidate, artifact, and protected publication flow.
+
+### Continuous integration and coverage
+
+The [CI workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/ci.yml) separates the
+platform gates so failures identify the affected consumer surface:
+
+- Linux runs shared/JVM tests, Android host tests, ABI validation, Kover verification, and a
+  standalone consumer of the locally published JitPack-shaped KMP metadata.
+- Android emulators run the device suite and the full-R8 consumer on API 21 and API 36.
+- macOS builds and tests Kotlin/Native, the Swift facade, device/simulator framework slices, the
+  generated Swift package, and device/simulator consumer builds.
+- Publishing a GitHub Release starts a separate clean-cache distribution smoke test against the
+  public JitPack repository and GitHub Release asset. This protects the external Gradle and Swift
+  Package Manager paths that repository-local builds cannot prove. Its
+  [Swift consumer fixture](integration-tests/swift-package-consumer/README.md) declares the public
+  Git URL and exact release version just like an application package.
+
+The coverage badge reports **Kover JVM coverage**: shared Kotlin code exercised on the JVM. CI
+enforces a 90% line-coverage floor and uploads the XML report to Codecov. Native execution, Swift
+tests, Android device tests, and the R8 consumer are independent CI gates; their results are not
+misrepresented as part of the JVM coverage percentage. A local HTML report is written to
+`build/reports/kover/htmlJvm/index.html` by `koverHtmlReportJvm`.
 
 ### Native iOS and Swift
 
-From a source checkout, pure Swift applications consume the generated `RRuleKit` local package
-rather than the Kotlin-facing KLIB. The package wraps a static `RRuleKmpCore.xcframework` and
-exposes Foundation dates, Swift collections, bounded queries, and catchable Swift errors. Its
-instant-oriented facade accepts UTC or `TZID`-bearing `DTSTART` values; date-only and floating
-recurrences remain available through the KMP API. It supports iOS device arm64 and simulator
-arm64/x86_64 while leaving the existing KMP artifact unchanged.
+Native applications normally consume the remote package described in
+[Installation](#native-ios-with-swift-package-manager). For development from a source checkout,
+the project can also generate an `RRuleKit` local package. It wraps a static
+`RRuleKmpCore.xcframework` and exposes Foundation dates, Swift collections, bounded queries, and
+catchable Swift errors. Its instant-oriented facade accepts UTC or `TZID`-bearing `DTSTART` values;
+date-only and floating recurrences remain available through the KMP API. It supports iOS device
+arm64 and simulator arm64/x86_64 while leaving the existing KMP artifact unchanged.
 
 ```shell
 ./gradlew :apple:rrule-kit:iosSimulatorArm64Test
@@ -148,10 +289,12 @@ arm64/x86_64 while leaving the existing KMP artifact unchanged.
 ```
 
 Add the generated `build/swift-package` directory—not the binary-less checked-in package fixture—as
-a local package in Xcode and import `RRuleKit`. A remote Swift Package is not configured yet. The
-framework declares an iOS 13 device target, but a real iOS 13 runtime/device test remains a release
-prerequisite. See the [native iOS integration guide](docs/native-ios.md) for the Swift API,
-elapsed-duration example, consumer tests, and remote binary-release procedure.
+a local package in Xcode and import `RRuleKit`. The checked-in root `Package.swift` is the remote
+package manifest and points to the exact checksum of the released XCFramework. The package declares
+iOS 13 support, and CI verifies compile/link compatibility for device and simulator slices with the
+current Xcode toolchain. A real iOS 13 runtime/device test remains a manual release caveat. See the
+[native iOS integration guide](docs/native-ios.md) for the Swift API, elapsed-duration example,
+consumer tests, and binary-release details.
 
 ### Android API 21–25 consumer setup
 
@@ -162,6 +305,8 @@ module that produces the final APK or app bundle:
 ```kotlin
 android {
     compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
         isCoreLibraryDesugaringEnabled = true
     }
 }
@@ -175,8 +320,8 @@ This is an application packaging requirement and cannot be enabled transitively 
 Kotlin Multiplatform library. Applications that do not enable desugaring must use API 26 or newer.
 The repository's instrumented-test APK enables desugaring itself so the shared suite can run on an
 API 21–25 emulator or device; that test-only setting does not alter the published consumer contract.
-The standalone minified consumer is verified locally on a current API; a protected release workflow
-should additionally retain an API 21 runtime lane.
+CI exercises the device suite and standalone minified consumer on API 21 and API 36, so the
+minimum-runtime and current-toolchain contracts are both protected.
 
 See the official [kotlinx-datetime setup notes](https://github.com/Kotlin/kotlinx-datetime#using-in-your-projects)
 and [Android desugaring documentation](https://developer.android.com/studio/write/java8-support#library-desugaring).
@@ -593,8 +738,15 @@ Passing tests are evidence for the listed behavior, not a blanket certification 
 
 The hourly example uses [verified RFC erratum 3883](https://www.rfc-editor.org/errata/eid3883) (`UNTIL=19970902T210000Z`), which corrects the published example's UTC boundary.
 
+## Security
+
+Report suspected vulnerabilities privately through the
+[security policy](SECURITY.md). Please do not disclose a vulnerability in a
+public issue or discussion before a fix can be coordinated.
+
 ## License
 
 `rrule-kmp` is available under the [MIT License](LICENSE). You may use, copy, modify, merge,
 publish, distribute, sublicense, and sell copies subject to the license notice. Selected regression
-test material retains its required terms in [`THIRD_PARTY_NOTICES`](THIRD_PARTY_NOTICES).
+test and binary-runtime material retains its required terms in
+[`THIRD_PARTY_NOTICES`](THIRD_PARTY_NOTICES) and [`LICENSES`](LICENSES/README.md).

@@ -16,7 +16,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
 }
 
-group = "io.github.yallain"
+group = providers.gradleProperty("PUBLICATION_GROUP").orElse("io.github.yallain").get()
 version = providers.gradleProperty("VERSION_NAME").orElse("0.1.0-SNAPSHOT").get()
 
 private val minimumIosVersion = "13.0"
@@ -102,6 +102,9 @@ tasks.register<Sync>("prepareLocalSwiftPackage") {
     }
     from(rootProject.layout.projectDirectory.file("LICENSE"))
     from(rootProject.layout.projectDirectory.file("THIRD_PARTY_NOTICES"))
+    from(rootProject.layout.projectDirectory.dir("LICENSES")) {
+        into("LICENSES")
+    }
     into(rootProject.layout.buildDirectory.dir("swift-package"))
 }
 

@@ -7,7 +7,7 @@ pluginManagement {
 }
 
 val rruleGroup = providers.gradleProperty("rruleGroup")
-    .orElse("io.github.yallain")
+    .orElse("com.github.yannallain")
 val rruleRepositoryUrl = providers.gradleProperty("rruleRepositoryUrl")
     .orElse(rootDir.resolve("../../build/repository").toURI().toString())
 
@@ -17,7 +17,7 @@ dependencyResolutionManagement {
         exclusiveContent {
             forRepository {
                 maven {
-                    name = "rruleKmpLocalBuild"
+                    name = "rruleKmpPublication"
                     url = uri(rruleRepositoryUrl.get())
                 }
             }
@@ -35,4 +35,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "rrule-kmp-android-minified-consumer"
+rootProject.name = "rrule-kmp-published-consumer"

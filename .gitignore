@@ -11,4 +11,5 @@ local.properties
 *.xcresult/
 DerivedData/
 apple/swift-package/Artifacts/
+integration-tests/swift-package-consumer/Package.resolved
 gradle/gradle-daemon-jvm.properties
