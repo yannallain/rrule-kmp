@@ -1,0 +1,14 @@
+.gradle/
+.idea/
+.kotlin/
+.build/
+.swiftpm/
+.DS_Store
+build/
+local.properties
+*.iml
+*.xcworkspace/
+*.xcresult/
+DerivedData/
+apple/swift-package/Artifacts/
+gradle/gradle-daemon-jvm.properties

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="rrule-kmp R8 smoke test">
+        <provider
+            android:name=".ShrinkerSmokeStatusProvider"
+            android:authorities="io.github.yallain.rrule.integration.shrinker.status"
+            android:exported="true" />
+    </application>
+</manifest>

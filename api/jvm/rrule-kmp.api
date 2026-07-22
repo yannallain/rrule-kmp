@@ -1,0 +1,369 @@
+public final class io/github/yallain/rrule/AmbiguousTimePolicy : java/lang/Enum {
+	public static final field EARLIER Lio/github/yallain/rrule/AmbiguousTimePolicy;
+	public static final field LATER Lio/github/yallain/rrule/AmbiguousTimePolicy;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/yallain/rrule/AmbiguousTimePolicy;
+	public static fun values ()[Lio/github/yallain/rrule/AmbiguousTimePolicy;
+}
+
+public final class io/github/yallain/rrule/ByDay {
+	public fun <init> (Lio/github/yallain/rrule/Weekday;Ljava/lang/Integer;)V
+	public synthetic fun <init> (Lio/github/yallain/rrule/Weekday;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lio/github/yallain/rrule/Weekday;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun copy (Lio/github/yallain/rrule/Weekday;Ljava/lang/Integer;)Lio/github/yallain/rrule/ByDay;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/ByDay;Lio/github/yallain/rrule/Weekday;Ljava/lang/Integer;ILjava/lang/Object;)Lio/github/yallain/rrule/ByDay;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOrdinal ()Ljava/lang/Integer;
+	public final fun getWeekday ()Lio/github/yallain/rrule/Weekday;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/Frequency : java/lang/Enum {
+	public static final field DAILY Lio/github/yallain/rrule/Frequency;
+	public static final field HOURLY Lio/github/yallain/rrule/Frequency;
+	public static final field MINUTELY Lio/github/yallain/rrule/Frequency;
+	public static final field MONTHLY Lio/github/yallain/rrule/Frequency;
+	public static final field SECONDLY Lio/github/yallain/rrule/Frequency;
+	public static final field WEEKLY Lio/github/yallain/rrule/Frequency;
+	public static final field YEARLY Lio/github/yallain/rrule/Frequency;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/yallain/rrule/Frequency;
+	public static fun values ()[Lio/github/yallain/rrule/Frequency;
+}
+
+public final class io/github/yallain/rrule/KotlinxRecurrenceTimeZoneResolver : io/github/yallain/rrule/LinearLocalTimeZoneResolver {
+	public static final field INSTANCE Lio/github/yallain/rrule/KotlinxRecurrenceTimeZoneResolver;
+	public fun hasLinearLocalTimeline (Ljava/lang/String;)Z
+	public fun localDateTimeAt (Lkotlin/time/Instant;Ljava/lang/String;)Lkotlinx/datetime/LocalDateTime;
+	public fun nonexistentInstant (Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)Lkotlin/time/Instant;
+	public fun resolve (Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)Lio/github/yallain/rrule/LocalTimeResolution;
+}
+
+public abstract interface class io/github/yallain/rrule/LinearLocalTimeZoneResolver : io/github/yallain/rrule/RecurrenceTimeZoneResolver {
+	public abstract fun hasLinearLocalTimeline (Ljava/lang/String;)Z
+}
+
+public final class io/github/yallain/rrule/LinearLocalTimeZoneResolver$DefaultImpls {
+	public static fun localDateTimeAt (Lio/github/yallain/rrule/LinearLocalTimeZoneResolver;Lkotlin/time/Instant;Ljava/lang/String;)Lkotlinx/datetime/LocalDateTime;
+	public static fun nonexistentInstant (Lio/github/yallain/rrule/LinearLocalTimeZoneResolver;Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)Lkotlin/time/Instant;
+}
+
+public abstract interface class io/github/yallain/rrule/LocalTimeResolution {
+}
+
+public final class io/github/yallain/rrule/LocalTimeResolution$Ambiguous : io/github/yallain/rrule/LocalTimeResolution {
+	public fun <init> (Lkotlin/time/Instant;Lkotlin/time/Instant;)V
+	public final fun component1 ()Lkotlin/time/Instant;
+	public final fun component2 ()Lkotlin/time/Instant;
+	public final fun copy (Lkotlin/time/Instant;Lkotlin/time/Instant;)Lio/github/yallain/rrule/LocalTimeResolution$Ambiguous;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/LocalTimeResolution$Ambiguous;Lkotlin/time/Instant;Lkotlin/time/Instant;ILjava/lang/Object;)Lio/github/yallain/rrule/LocalTimeResolution$Ambiguous;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEarlier ()Lkotlin/time/Instant;
+	public final fun getLater ()Lkotlin/time/Instant;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/LocalTimeResolution$Nonexistent : io/github/yallain/rrule/LocalTimeResolution {
+	public static final field INSTANCE Lio/github/yallain/rrule/LocalTimeResolution$Nonexistent;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/LocalTimeResolution$Valid : io/github/yallain/rrule/LocalTimeResolution {
+	public fun <init> (Lkotlin/time/Instant;)V
+	public final fun component1 ()Lkotlin/time/Instant;
+	public final fun copy (Lkotlin/time/Instant;)Lio/github/yallain/rrule/LocalTimeResolution$Valid;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/LocalTimeResolution$Valid;Lkotlin/time/Instant;ILjava/lang/Object;)Lio/github/yallain/rrule/LocalTimeResolution$Valid;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInstant ()Lkotlin/time/Instant;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/yallain/rrule/Recurrence {
+	public abstract fun after (Lio/github/yallain/rrule/RecurrenceDateTime;Z)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public static synthetic fun after$default (Lio/github/yallain/rrule/Recurrence;Lio/github/yallain/rrule/RecurrenceDateTime;ZILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public abstract fun before (Lio/github/yallain/rrule/RecurrenceDateTime;Z)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public static synthetic fun before$default (Lio/github/yallain/rrule/Recurrence;Lio/github/yallain/rrule/RecurrenceDateTime;ZILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public abstract fun between (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/lang/Integer;)Ljava/util/List;
+	public static synthetic fun between$default (Lio/github/yallain/rrule/Recurrence;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/lang/Integer;ILjava/lang/Object;)Ljava/util/List;
+	public abstract fun occurrences ()Lkotlin/sequences/Sequence;
+}
+
+public final class io/github/yallain/rrule/Recurrence$DefaultImpls {
+	public static synthetic fun after$default (Lio/github/yallain/rrule/Recurrence;Lio/github/yallain/rrule/RecurrenceDateTime;ZILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public static synthetic fun before$default (Lio/github/yallain/rrule/Recurrence;Lio/github/yallain/rrule/RecurrenceDateTime;ZILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public static synthetic fun between$default (Lio/github/yallain/rrule/Recurrence;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/lang/Integer;ILjava/lang/Object;)Ljava/util/List;
+}
+
+public final class io/github/yallain/rrule/RecurrenceContentParser {
+	public static final field INSTANCE Lio/github/yallain/rrule/RecurrenceContentParser;
+	public final fun parse (Ljava/lang/String;)Lio/github/yallain/rrule/RecurrenceDefinition;
+}
+
+public abstract interface class io/github/yallain/rrule/RecurrenceDateTime {
+}
+
+public final class io/github/yallain/rrule/RecurrenceDateTime$DateOnly : io/github/yallain/rrule/RecurrenceDateTime {
+	public fun <init> (Lkotlinx/datetime/LocalDate;)V
+	public final fun component1 ()Lkotlinx/datetime/LocalDate;
+	public final fun copy (Lkotlinx/datetime/LocalDate;)Lio/github/yallain/rrule/RecurrenceDateTime$DateOnly;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrenceDateTime$DateOnly;Lkotlinx/datetime/LocalDate;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime$DateOnly;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDate ()Lkotlinx/datetime/LocalDate;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceDateTime$Floating : io/github/yallain/rrule/RecurrenceDateTime {
+	public fun <init> (Lkotlinx/datetime/LocalDateTime;)V
+	public final fun component1 ()Lkotlinx/datetime/LocalDateTime;
+	public final fun copy (Lkotlinx/datetime/LocalDateTime;)Lio/github/yallain/rrule/RecurrenceDateTime$Floating;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrenceDateTime$Floating;Lkotlinx/datetime/LocalDateTime;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime$Floating;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDateTime ()Lkotlinx/datetime/LocalDateTime;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceDateTime$Utc : io/github/yallain/rrule/RecurrenceDateTime {
+	public fun <init> (Lkotlin/time/Instant;)V
+	public final fun component1 ()Lkotlin/time/Instant;
+	public final fun copy (Lkotlin/time/Instant;)Lio/github/yallain/rrule/RecurrenceDateTime$Utc;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrenceDateTime$Utc;Lkotlin/time/Instant;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime$Utc;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInstant ()Lkotlin/time/Instant;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceDateTime$Zoned : io/github/yallain/rrule/RecurrenceDateTime {
+	public fun <init> (Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)V
+	public final fun component1 ()Lkotlinx/datetime/LocalDateTime;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)Lio/github/yallain/rrule/RecurrenceDateTime$Zoned;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrenceDateTime$Zoned;Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDateTime$Zoned;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDateTime ()Lkotlinx/datetime/LocalDateTime;
+	public final fun getTimeZoneId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceDefinition {
+	public fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/util/List;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;)V
+	public synthetic fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/util/List;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAdditionalDates ()Ljava/util/Set;
+	public final fun getAdditionalPeriods ()Ljava/util/Set;
+	public final fun getExcludedDates ()Ljava/util/Set;
+	public final fun getExclusionRules ()Ljava/util/List;
+	public final fun getRules ()Ljava/util/List;
+	public final fun getStart ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun hashCode ()I
+	public final fun recurrenceSet (Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;)Lio/github/yallain/rrule/RecurrenceSet;
+	public static synthetic fun recurrenceSet$default (Lio/github/yallain/rrule/RecurrenceDefinition;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceSet;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceDuration {
+	public fun <init> ()V
+	public fun <init> (IIIII)V
+	public synthetic fun <init> (IIIIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun component5 ()I
+	public final fun copy (IIIII)Lio/github/yallain/rrule/RecurrenceDuration;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrenceDuration;IIIIIILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceDuration;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDays ()I
+	public final fun getHours ()I
+	public final fun getMinutes ()I
+	public final fun getSeconds ()I
+	public final fun getWeeks ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceErrorReason : java/lang/Enum {
+	public static final field DUPLICATE_PROPERTY Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field EMPTY_VALUE Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field INCOMPATIBLE_TEMPORAL_TYPE Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field INVALID_COMBINATION Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field MALFORMED_TOKEN Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field MISSING_REQUIRED_PROPERTY Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field MUTUALLY_EXCLUSIVE Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field OUT_OF_RANGE Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static final field UNKNOWN_PROPERTY Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/yallain/rrule/RecurrenceErrorReason;
+	public static fun values ()[Lio/github/yallain/rrule/RecurrenceErrorReason;
+}
+
+public final class io/github/yallain/rrule/RecurrenceInstantResolutionKt {
+	public static final fun toInstantOrNull (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;)Lkotlin/time/Instant;
+	public static synthetic fun toInstantOrNull$default (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;ILjava/lang/Object;)Lkotlin/time/Instant;
+}
+
+public final class io/github/yallain/rrule/RecurrenceParseException : java/lang/IllegalArgumentException {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/yallain/rrule/RecurrenceErrorReason;Ljava/lang/Integer;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/yallain/rrule/RecurrenceErrorReason;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getDetail ()Ljava/lang/String;
+	public final fun getInputValue ()Ljava/lang/String;
+	public final fun getInvalidToken ()Ljava/lang/String;
+	public final fun getPosition ()Ljava/lang/Integer;
+	public final fun getPropertyName ()Ljava/lang/String;
+	public final fun getReason ()Lio/github/yallain/rrule/RecurrenceErrorReason;
+}
+
+public abstract interface class io/github/yallain/rrule/RecurrencePeriod {
+	public abstract fun getStart ()Lio/github/yallain/rrule/RecurrenceDateTime;
+}
+
+public final class io/github/yallain/rrule/RecurrencePeriod$Explicit : io/github/yallain/rrule/RecurrencePeriod {
+	public fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;)V
+	public final fun component1 ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public final fun component2 ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public final fun copy (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;)Lio/github/yallain/rrule/RecurrencePeriod$Explicit;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrencePeriod$Explicit;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrencePeriod$Explicit;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEnd ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun getStart ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrencePeriod$WithDuration : io/github/yallain/rrule/RecurrencePeriod {
+	public fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDuration;)V
+	public final fun component1 ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public final fun component2 ()Lio/github/yallain/rrule/RecurrenceDuration;
+	public final fun copy (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDuration;)Lio/github/yallain/rrule/RecurrencePeriod$WithDuration;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrencePeriod$WithDuration;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDuration;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrencePeriod$WithDuration;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDuration ()Lio/github/yallain/rrule/RecurrenceDuration;
+	public fun getStart ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrencePeriodSerializer {
+	public static final field INSTANCE Lio/github/yallain/rrule/RecurrencePeriodSerializer;
+	public final fun serialize (Lio/github/yallain/rrule/RecurrencePeriod;)Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceRule {
+	public fun <init> (Lio/github/yallain/rrule/Frequency;ILjava/lang/Integer;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/Weekday;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;)V
+	public synthetic fun <init> (Lio/github/yallain/rrule/Frequency;ILjava/lang/Integer;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/Weekday;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun copy (Lio/github/yallain/rrule/Frequency;ILjava/lang/Integer;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/Weekday;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;)Lio/github/yallain/rrule/RecurrenceRule;
+	public static synthetic fun copy$default (Lio/github/yallain/rrule/RecurrenceRule;Lio/github/yallain/rrule/Frequency;ILjava/lang/Integer;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/Weekday;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;Ljava/util/Set;ILjava/lang/Object;)Lio/github/yallain/rrule/RecurrenceRule;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getByDay ()Ljava/util/List;
+	public final fun getByHour ()Ljava/util/Set;
+	public final fun getByMinute ()Ljava/util/Set;
+	public final fun getByMonth ()Ljava/util/Set;
+	public final fun getByMonthDay ()Ljava/util/Set;
+	public final fun getBySecond ()Ljava/util/Set;
+	public final fun getBySetPosition ()Ljava/util/Set;
+	public final fun getByWeekNumber ()Ljava/util/Set;
+	public final fun getByYearDay ()Ljava/util/Set;
+	public final fun getCount ()Ljava/lang/Integer;
+	public final fun getFrequency ()Lio/github/yallain/rrule/Frequency;
+	public final fun getInterval ()I
+	public final fun getUntil ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public final fun getWeekStart ()Lio/github/yallain/rrule/Weekday;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceRuleParser {
+	public static final field INSTANCE Lio/github/yallain/rrule/RecurrenceRuleParser;
+	public final fun parse (Ljava/lang/String;)Lio/github/yallain/rrule/RecurrenceRule;
+}
+
+public final class io/github/yallain/rrule/RecurrenceRuleSerializer {
+	public static final field INSTANCE Lio/github/yallain/rrule/RecurrenceRuleSerializer;
+	public final fun serialize (Lio/github/yallain/rrule/RecurrenceRule;)Ljava/lang/String;
+}
+
+public final class io/github/yallain/rrule/RecurrenceSet : io/github/yallain/rrule/Recurrence {
+	public fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/util/List;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;Ljava/util/Set;)V
+	public synthetic fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/util/List;Ljava/util/List;Ljava/util/Set;Ljava/util/Set;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;Ljava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun after (Lio/github/yallain/rrule/RecurrenceDateTime;Z)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun before (Lio/github/yallain/rrule/RecurrenceDateTime;Z)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun between (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/lang/Integer;)Ljava/util/List;
+	public final fun getAdditionalDates ()Ljava/util/Set;
+	public final fun getAdditionalPeriods ()Ljava/util/Set;
+	public final fun getAmbiguousTimePolicy ()Lio/github/yallain/rrule/AmbiguousTimePolicy;
+	public final fun getExcludedDates ()Ljava/util/Set;
+	public final fun getExclusionRules ()Ljava/util/List;
+	public final fun getRules ()Ljava/util/List;
+	public final fun getStart ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public final fun getTimeZoneResolver ()Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;
+	public fun occurrences ()Lkotlin/sequences/Sequence;
+}
+
+public abstract interface class io/github/yallain/rrule/RecurrenceTimeZoneResolver {
+	public fun localDateTimeAt (Lkotlin/time/Instant;Ljava/lang/String;)Lkotlinx/datetime/LocalDateTime;
+	public fun nonexistentInstant (Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)Lkotlin/time/Instant;
+	public abstract fun resolve (Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)Lio/github/yallain/rrule/LocalTimeResolution;
+}
+
+public final class io/github/yallain/rrule/RecurrenceTimeZoneResolver$DefaultImpls {
+	public static fun localDateTimeAt (Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lkotlin/time/Instant;Ljava/lang/String;)Lkotlinx/datetime/LocalDateTime;
+	public static fun nonexistentInstant (Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lkotlinx/datetime/LocalDateTime;Ljava/lang/String;)Lkotlin/time/Instant;
+}
+
+public final class io/github/yallain/rrule/RecurrenceValidationException : java/lang/IllegalArgumentException {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/yallain/rrule/RecurrenceErrorReason;Ljava/lang/Integer;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/github/yallain/rrule/RecurrenceErrorReason;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getDetail ()Ljava/lang/String;
+	public final fun getInputValue ()Ljava/lang/String;
+	public final fun getInvalidToken ()Ljava/lang/String;
+	public final fun getPosition ()Ljava/lang/Integer;
+	public final fun getPropertyName ()Ljava/lang/String;
+	public final fun getReason ()Lio/github/yallain/rrule/RecurrenceErrorReason;
+}
+
+public final class io/github/yallain/rrule/RuleRecurrence : io/github/yallain/rrule/Recurrence {
+	public fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceRule;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;)V
+	public synthetic fun <init> (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceRule;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun after (Lio/github/yallain/rrule/RecurrenceDateTime;Z)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun before (Lio/github/yallain/rrule/RecurrenceDateTime;Z)Lio/github/yallain/rrule/RecurrenceDateTime;
+	public fun between (Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceDateTime;Ljava/lang/Integer;)Ljava/util/List;
+	public final fun getAmbiguousTimePolicy ()Lio/github/yallain/rrule/AmbiguousTimePolicy;
+	public final fun getRule ()Lio/github/yallain/rrule/RecurrenceRule;
+	public final fun getStart ()Lio/github/yallain/rrule/RecurrenceDateTime;
+	public final fun getTimeZoneResolver ()Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;
+	public fun occurrences ()Lkotlin/sequences/Sequence;
+}
+
+public final class io/github/yallain/rrule/RuleRecurrenceKt {
+	public static final fun recurrence (Lio/github/yallain/rrule/RecurrenceRule;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;)Lio/github/yallain/rrule/RuleRecurrence;
+	public static synthetic fun recurrence$default (Lio/github/yallain/rrule/RecurrenceRule;Lio/github/yallain/rrule/RecurrenceDateTime;Lio/github/yallain/rrule/RecurrenceTimeZoneResolver;Lio/github/yallain/rrule/AmbiguousTimePolicy;ILjava/lang/Object;)Lio/github/yallain/rrule/RuleRecurrence;
+}
+
+public final class io/github/yallain/rrule/Weekday : java/lang/Enum {
+	public static final field Companion Lio/github/yallain/rrule/Weekday$Companion;
+	public static final field FRIDAY Lio/github/yallain/rrule/Weekday;
+	public static final field MONDAY Lio/github/yallain/rrule/Weekday;
+	public static final field SATURDAY Lio/github/yallain/rrule/Weekday;
+	public static final field SUNDAY Lio/github/yallain/rrule/Weekday;
+	public static final field THURSDAY Lio/github/yallain/rrule/Weekday;
+	public static final field TUESDAY Lio/github/yallain/rrule/Weekday;
+	public static final field WEDNESDAY Lio/github/yallain/rrule/Weekday;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getRfcCode ()Ljava/lang/String;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/yallain/rrule/Weekday;
+	public static fun values ()[Lio/github/yallain/rrule/Weekday;
+}
+
+public final class io/github/yallain/rrule/Weekday$Companion {
+	public final fun fromRfcCode (Ljava/lang/String;)Lio/github/yallain/rrule/Weekday;
+}
+
