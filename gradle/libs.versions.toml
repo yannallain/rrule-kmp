@@ -1,5 +1,5 @@
 [versions]
-android-gradle-plugin = "9.2.1"
+android-gradle-plugin = "9.3.0"
 kotlin = "2.3.20"
 kotlinx-datetime = "0.8.0"
 androidx-test-runner = "1.7.0"
