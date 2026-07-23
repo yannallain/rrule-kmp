@@ -141,8 +141,8 @@ internal class PeriodGenerator(
         val hasVariableDateFilter =
             rule.normalizedNonUniversalByMonth().isNotEmpty() ||
                 rule.byWeekNumber.isNotEmpty() ||
-                rule.byYearDay.isNotEmpty() ||
-                rule.byMonthDay.isNotEmpty() ||
+                rule.normalizedNonUniversalByYearDay().isNotEmpty() ||
+                rule.normalizedNonUniversalByMonthDay().isNotEmpty() ||
                 rule.normalizedNonUniversalByDay().isNotEmpty()
         if (hasVariableDateFilter) return null
         val hasLimitingClockFilter = when (rule.frequency) {

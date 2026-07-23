@@ -17,22 +17,38 @@ public class RuleRecurrence(
     private val temporal = TemporalSupport(start, timeZoneResolver, ambiguousTimePolicy)
     private val generator: PeriodGenerator
     private val countedIndexer: CountedRecurrenceIndexer?
+    private val countedIndexRequiresInstantSearch: Boolean
 
     init {
         RecurrenceRuleValidator.validateForStart(rule, start)
         temporal.validateStart()
         generator = PeriodGenerator(temporal.startDate, temporal.startDateTime, rule)
-        countedIndexer = if (
-            rule.count != null &&
+        val canIndexCount = rule.count != null &&
             rule.byWeekNumber.isEmpty() &&
-            generator.supportsCandidateIndexing &&
-            hasLinearCandidateTimeline()
+            generator.supportsCandidateIndexing
+        val hasLinearTimeline = canIndexCount && hasLinearCandidateTimeline()
+        val hasConstantTransitionPrefix = canIndexCount &&
+            !hasLinearTimeline &&
+            generator.constantCandidateCountAfterFirstPeriod() != null
+        val nonexistentRangesThrough = if (
+            canIndexCount && !hasLinearTimeline && hasConstantTransitionPrefix
+        ) {
+            nonexistentRangesThrough()
+        } else {
+            null
+        }
+        countedIndexRequiresInstantSearch = nonexistentRangesThrough != null
+        countedIndexer = if (
+            canIndexCount && (hasLinearTimeline || nonexistentRangesThrough != null)
         ) {
             CountedRecurrenceIndexer(
                 generator = generator,
                 startLocal = LocalValue(temporal.startDate, temporal.startDateTime),
                 frequency = rule.frequency,
-                countLimit = rule.count.toLong(),
+                countLimit = checkNotNull(rule.count).toLong(),
+                periodFloor = ::periodSearchStart,
+                periodCeiling = ::periodCeiling,
+                nonexistentRangesThrough = nonexistentRangesThrough,
             )
         } else {
             null
@@ -82,18 +98,21 @@ public class RuleRecurrence(
         if (rule.count != null && upperLocal != null) {
             val indexer = countedIndexer
             if (indexer != null) {
-                val firstPeriod = periodSearchStart(upperLocal)
-                val occurrenceCount = indexer.occurrenceCountThrough(
-                    firstPossiblyIntersectingPeriod = firstPeriod,
-                    finalPossiblyIntersectingPeriod = periodCeiling(upperLocal),
-                    upperBound = upperLocal,
-                    inclusive = inclusive,
-                )
-                if (occurrenceCount == 0L) return null
-                if (occurrenceCount != null) {
-                    val candidate = indexer.candidateAtOrdinal(occurrenceCount)
-                    val occurrence = candidate?.let(temporal::convert)
-                    if (occurrence != null) return occurrence.value
+                val prefix = indexer.prefixThrough(upperLocal, inclusive)
+                if (prefix != null) {
+                    val occurrenceCount = minOf(prefix.occurrenceCount, rule.count.toLong())
+                    if (occurrenceCount == 0L) return null
+                    val indexedResult = if (countedIndexRequiresInstantSearch) {
+                        previousTransitionAwareOccurrence(
+                            prefix = prefix,
+                            maximumOrdinal = occurrenceCount,
+                            upperBound = value,
+                            upperInclusive = inclusive,
+                        )
+                    } else {
+                        directIndexedOccurrence(prefix, occurrenceCount, value, inclusive)
+                    }
+                    if (indexedResult.complete) return indexedResult.value
                 }
             }
         }
@@ -264,6 +283,67 @@ public class RuleRecurrence(
         }
     }
 
+    private fun directIndexedOccurrence(
+        prefix: CountedOccurrencePrefix,
+        ordinal: Long,
+        upperBound: RecurrenceDateTime,
+        upperInclusive: Boolean,
+    ): IndexedPreviousResult {
+        val candidate = prefix.candidateAtOccurrenceOrdinal(ordinal)
+            ?: return IndexedPreviousResult.INCOMPLETE
+        val occurrence = temporal.convert(candidate)
+            ?: return IndexedPreviousResult.INCOMPLETE
+        if (temporal.isBeforeStart(occurrence)) return IndexedPreviousResult.INCOMPLETE
+        val comparison = temporal.compare(occurrence.value, upperBound)
+        if (comparison > 0 || comparison == 0 && !upperInclusive) {
+            return IndexedPreviousResult.INCOMPLETE
+        }
+        return IndexedPreviousResult(complete = true, value = occurrence.value)
+    }
+
+    /**
+     * Finds the final indexed occurrence at or before an absolute bound.
+     *
+     * Local fields alone are insufficient around an overlap because query projection deliberately
+     * includes both possible branches. The selected ambiguity policy nevertheless keeps resolved
+     * occurrences ordered, so a logarithmic search over exact occurrence ordinals is sufficient.
+     */
+    private fun previousTransitionAwareOccurrence(
+        prefix: CountedOccurrencePrefix,
+        maximumOrdinal: Long,
+        upperBound: RecurrenceDateTime,
+        upperInclusive: Boolean,
+    ): IndexedPreviousResult {
+        val upperInstant = resolveRecurrenceInstant(
+            value = upperBound,
+            resolver = timeZoneResolver,
+            ambiguityPolicy = ambiguousTimePolicy,
+            propertyName = "QUERY",
+        ) ?: return IndexedPreviousResult.INCOMPLETE
+        var lowerOrdinal = 1L
+        var upperOrdinal = maximumOrdinal
+        var previous: RecurrenceDateTime? = null
+        while (lowerOrdinal <= upperOrdinal) {
+            val ordinal = lowerOrdinal + (upperOrdinal - lowerOrdinal) / 2L
+            val candidate = prefix.candidateAtOccurrenceOrdinal(ordinal)
+                ?: return IndexedPreviousResult.INCOMPLETE
+            val occurrence = temporal.convert(candidate)
+                ?: return IndexedPreviousResult.INCOMPLETE
+            if (temporal.isBeforeStart(occurrence)) return IndexedPreviousResult.INCOMPLETE
+
+            val comparison = checkNotNull(occurrence.instant).compareTo(upperInstant)
+            if (comparison < 0 || comparison == 0 && upperInclusive) {
+                previous = occurrence.value
+                if (ordinal == Long.MAX_VALUE) break
+                lowerOrdinal = ordinal + 1L
+            } else {
+                if (ordinal == 1L) break
+                upperOrdinal = ordinal - 1L
+            }
+        }
+        return IndexedPreviousResult(complete = true, value = previous)
+    }
+
     private fun periodCeiling(bound: LocalValue): Long {
         val searchStart = periodSearchStart(bound)
         // A BYWEEKNO year can begin in the preceding December. The lower-bound search already
@@ -328,6 +408,40 @@ public class RuleRecurrence(
         is RecurrenceDateTime.Zoned ->
             (timeZoneResolver as? LinearLocalTimeZoneResolver)
                 ?.hasLinearLocalTimeline(temporalStart.timeZoneId) == true
+    }
+
+    private fun nonexistentRangesThrough(): ((LocalDateTime) -> List<NonexistentLocalTimeRange>)? {
+        val zonedStart = start as? RecurrenceDateTime.Zoned ?: return null
+        val provider: NonexistentLocalTimeRangeProvider = when {
+            timeZoneResolver === KotlinxRecurrenceTimeZoneResolver ->
+                NonexistentLocalTimeRangeProvider(
+                    KotlinxRecurrenceTimeZoneResolver::nonexistentLocalTimeRanges,
+                )
+            timeZoneResolver is NonexistentLocalTimeRangeProvider -> timeZoneResolver
+            else -> return null
+        }
+        return { upperBound ->
+            provider.nonexistentLocalTimeRanges(
+                timeZoneId = zonedStart.timeZoneId,
+                startInclusive = zonedStart.dateTime,
+                // Stored recurrence candidates cannot extend past the RFC year range. Avoid
+                // asking platform timezone databases to enumerate irrelevant, possibly
+                // unsupported transition years for an unbounded query value.
+                endInclusive = minOf(upperBound, LAST_RFC_DATE_TIME),
+            )
+        }
+    }
+}
+
+private data class IndexedPreviousResult(
+    val complete: Boolean,
+    val value: RecurrenceDateTime?,
+) {
+    companion object {
+        val INCOMPLETE: IndexedPreviousResult = IndexedPreviousResult(
+            complete = false,
+            value = null,
+        )
     }
 }
 

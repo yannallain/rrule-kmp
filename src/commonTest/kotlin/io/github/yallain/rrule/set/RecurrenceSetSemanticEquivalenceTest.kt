@@ -53,6 +53,11 @@ class RecurrenceSetSemanticEquivalenceTest {
                 byDay = Weekday.entries.map(::ByDay),
             ),
             rule(Frequency.MONTHLY) to rule(Frequency.MONTHLY, byMonth = (1..12).toSet()),
+            rule(Frequency.SECONDLY) to rule(
+                Frequency.SECONDLY,
+                byMonthDay = (1..28).toSet() + setOf(-3, -2, -1),
+                byYearDay = (1..365).toSet() + -1,
+            ),
         )
 
         cases.forEach { (plain, explicitlyUniversal) ->
@@ -101,6 +106,46 @@ class RecurrenceSetSemanticEquivalenceTest {
             ),
             daily.occurrences().toList(),
         )
+
+        val monthly = RecurrenceSet(
+            start = floating(2024, 1, 1),
+            rules = listOf(
+                rule(
+                    Frequency.MONTHLY,
+                    count = 4,
+                    byMonthDay = (1..28).toSet() + setOf(-3, -2, -1),
+                ),
+            ),
+            exclusionRules = listOf(rule(Frequency.MONTHLY, count = 4)),
+        )
+        assertEquals(
+            listOf(
+                floating(2024, 1, 2),
+                floating(2024, 1, 3),
+                floating(2024, 1, 4),
+            ),
+            monthly.occurrences().toList(),
+        )
+
+        val yearly = RecurrenceSet(
+            start = floating(2024, 1, 1),
+            rules = listOf(
+                rule(
+                    Frequency.YEARLY,
+                    count = 4,
+                    byYearDay = (1..365).toSet() + -1,
+                ),
+            ),
+            exclusionRules = listOf(rule(Frequency.YEARLY, count = 4)),
+        )
+        assertEquals(
+            listOf(
+                floating(2024, 1, 2),
+                floating(2024, 1, 3),
+                floating(2024, 1, 4),
+            ),
+            yearly.occurrences().toList(),
+        )
     }
 
     private fun finiteRuleOccurrences(rule: RecurrenceRule): List<RecurrenceDateTime> =
@@ -116,6 +161,8 @@ class RecurrenceSetSemanticEquivalenceTest {
         byMinute: Set<Int> = emptySet(),
         byHour: Set<Int> = emptySet(),
         byDay: List<ByDay> = emptyList(),
+        byMonthDay: Set<Int> = emptySet(),
+        byYearDay: Set<Int> = emptySet(),
         byMonth: Set<Int> = emptySet(),
     ): RecurrenceRule = RecurrenceRule(
         frequency = frequency,
@@ -124,6 +171,8 @@ class RecurrenceSetSemanticEquivalenceTest {
         byMinute = byMinute,
         byHour = byHour,
         byDay = byDay,
+        byMonthDay = byMonthDay,
+        byYearDay = byYearDay,
         byMonth = byMonth,
     )
 

@@ -7,6 +7,8 @@ package io.github.yallain.rrule
  * all 60 minutes limit a `MINUTELY` rule without changing it, but expand an `HOURLY` rule from one
  * default minute to 60 candidates. These narrow proofs are shared by recurrence-set equivalence
  * and counted-prefix indexing so correctness and performance use one definition of “no-op”.
+ * Signed date selectors are universal only when they cover every position for every possible
+ * month or year length.
  */
 internal fun RecurrenceRule.normalizedNonUniversalBySecond(): Set<Int> {
     val normalized = bySecond.normalizeRfcSeconds()
@@ -21,6 +23,20 @@ internal fun RecurrenceRule.normalizedNonUniversalByHour(): Set<Int> =
 
 internal fun RecurrenceRule.normalizedNonUniversalByDay(): List<ByDay> =
     if (frequency.limitsByDay() && byDay.isEveryUnqualifiedWeekday()) emptyList() else byDay
+
+internal fun RecurrenceRule.normalizedNonUniversalByMonthDay(): Set<Int> =
+    if (frequency.limitsByMonthDay() && byMonthDay.coversEverySignedPosition(28..31)) {
+        emptySet()
+    } else {
+        byMonthDay
+    }
+
+internal fun RecurrenceRule.normalizedNonUniversalByYearDay(): Set<Int> =
+    if (frequency.limitsByYearDay() && byYearDay.coversEverySignedPosition(365..366)) {
+        emptySet()
+    } else {
+        byYearDay
+    }
 
 internal fun RecurrenceRule.normalizedNonUniversalByMonth(): Set<Int> =
     if (frequency.limitsByMonth() && byMonth == ALL_MONTHS) emptySet() else byMonth
@@ -40,6 +56,16 @@ private fun Frequency.limitsByDay(): Boolean = when (this) {
     Frequency.WEEKLY, Frequency.MONTHLY, Frequency.YEARLY -> false
 }
 
+private fun Frequency.limitsByMonthDay(): Boolean = when (this) {
+    Frequency.SECONDLY, Frequency.MINUTELY, Frequency.HOURLY, Frequency.DAILY -> true
+    Frequency.WEEKLY, Frequency.MONTHLY, Frequency.YEARLY -> false
+}
+
+private fun Frequency.limitsByYearDay(): Boolean = when (this) {
+    Frequency.SECONDLY, Frequency.MINUTELY, Frequency.HOURLY -> true
+    Frequency.DAILY, Frequency.WEEKLY, Frequency.MONTHLY, Frequency.YEARLY -> false
+}
+
 private fun Frequency.limitsByMonth(): Boolean = when (this) {
     Frequency.SECONDLY, Frequency.MINUTELY, Frequency.HOURLY,
     Frequency.DAILY, Frequency.WEEKLY, Frequency.MONTHLY,
@@ -51,6 +77,13 @@ private fun List<ByDay>.isEveryUnqualifiedWeekday(): Boolean =
     size == Weekday.entries.size &&
         all { it.ordinal == null } &&
         mapTo(hashSetOf(), ByDay::weekday).size == Weekday.entries.size
+
+private fun Set<Int>.coversEverySignedPosition(lengths: IntRange): Boolean =
+    lengths.all { length ->
+        (1..length).all { position ->
+            position in this || position - length - 1 in this
+        }
+    }
 
 private val ALL_SECONDS: Set<Int> = (0..59).toSet()
 private val ALL_MINUTES: Set<Int> = ALL_SECONDS

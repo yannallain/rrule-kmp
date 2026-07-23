@@ -3,6 +3,7 @@ package io.github.yallain.rrule
 import kotlinx.datetime.FixedOffsetTimeZone
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.UtcOffset
 import kotlinx.datetime.offsetAt
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
@@ -49,4 +50,48 @@ public object KotlinxRecurrenceTimeZoneResolver : LinearLocalTimeZoneResolver {
 
     override fun nonexistentInstant(localDateTime: LocalDateTime, timeZoneId: String): Instant =
         localDateTime.toInstant(TimeZone.of(timeZoneId))
+
+    /** Returns complete local gaps using the same platform timezone database as [resolve]. */
+    internal fun nonexistentLocalTimeRanges(
+        timeZoneId: String,
+        startInclusive: LocalDateTime,
+        endInclusive: LocalDateTime,
+    ): List<NonexistentLocalTimeRange> {
+        if (startInclusive > endInclusive) return emptyList()
+        val timeZone = TimeZone.of(timeZoneId)
+        if (timeZone is FixedOffsetTimeZone) return emptyList()
+
+        // Every UtcOffset is strictly less than 24 hours. Treating local fields as UTC and adding
+        // two days on each side therefore contains every transition whose before/after local
+        // projection can intersect the requested interval.
+        val searchStart = startInclusive.toInstant(TimeZone.UTC) - 2.days
+        val searchEnd = endInclusive.toInstant(TimeZone.UTC) + 2.days
+        val ranges = platformTimeZoneTransitions(timeZoneId, searchStart, searchEnd)
+            .asSequence()
+            .filter { transition ->
+                transition.offsetAfterSeconds > transition.offsetBeforeSeconds
+            }
+            .map { transition ->
+                NonexistentLocalTimeRange(
+                    startInclusive = transition.instant.toLocalDateTime(
+                        FixedOffsetTimeZone(UtcOffset(seconds = transition.offsetBeforeSeconds)),
+                    ),
+                    endExclusive = transition.instant.toLocalDateTime(
+                        FixedOffsetTimeZone(UtcOffset(seconds = transition.offsetAfterSeconds)),
+                    ),
+                )
+            }
+            .filter { range ->
+                range.endExclusive > startInclusive && range.startInclusive <= endInclusive
+            }
+            .sortedBy(NonexistentLocalTimeRange::startInclusive)
+            .toList()
+
+        ranges.zipWithNext().forEach { (left, right) ->
+            check(left.endExclusive <= right.startInclusive) {
+                "Timezone gaps must be ordered and non-overlapping for $timeZoneId"
+            }
+        }
+        return ranges
+    }
 }

@@ -20,8 +20,8 @@ internal fun RecurrenceRule.isProvablySemanticallyEquivalentTo(other: Recurrence
         normalizedNonUniversalByMinute() == other.normalizedNonUniversalByMinute() &&
         normalizedNonUniversalByHour() == other.normalizedNonUniversalByHour() &&
         normalizedNonUniversalByDay() == other.normalizedNonUniversalByDay() &&
-        byMonthDay == other.byMonthDay &&
-        byYearDay == other.byYearDay &&
+        normalizedNonUniversalByMonthDay() == other.normalizedNonUniversalByMonthDay() &&
+        normalizedNonUniversalByYearDay() == other.normalizedNonUniversalByYearDay() &&
         byWeekNumber == other.byWeekNumber &&
         normalizedNonUniversalByMonth() == other.normalizedNonUniversalByMonth() &&
         bySetPosition == other.bySetPosition

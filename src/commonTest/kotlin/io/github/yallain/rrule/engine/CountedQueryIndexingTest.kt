@@ -119,6 +119,34 @@ class CountedQueryIndexingTest {
     }
 
     @Test
+    fun completeSignedCalendarLimitersKeepBidirectionalCountIndexing() {
+        val resolver = CountingLinearResolver(maximumResolutionCount = 50)
+        val recurrence = RuleRecurrence(
+            start = zoned(2000, 1, 1, 0, 0, 0),
+            rule = RecurrenceRule(
+                frequency = Frequency.SECONDLY,
+                count = 2_000_000_000,
+                bySecond = (0..58).toSet() + 60,
+                byMinute = (0..59).toSet(),
+                byHour = (0..23).toSet(),
+                byDay = Weekday.entries.map(::ByDay),
+                byMonthDay = (1..28).toSet() + setOf(-3, -2, -1),
+                byYearDay = (1..365).toSet() + -1,
+                byMonth = (1..12).toSet(),
+            ),
+            timeZoneResolver = resolver,
+        )
+        val query = zoned(2050, 1, 1, 0, 0, 0)
+
+        assertEquals(zoned(2050, 1, 1, 0, 0, 1), recurrence.after(query))
+        assertTrue(resolver.resolutionCount < 20, "Resolved ${resolver.resolutionCount} local values")
+
+        resolver.resolutionCount = 0
+        assertEquals(zoned(2049, 12, 31, 23, 59, 59), recurrence.before(query))
+        assertTrue(resolver.resolutionCount < 20, "Resolved ${resolver.resolutionCount} local values")
+    }
+
+    @Test
     fun denseCountedYearPrunesItsCartesianPrefixBeforeResolution() {
         val resolver = CountingLinearResolver()
         val recurrence = RuleRecurrence(

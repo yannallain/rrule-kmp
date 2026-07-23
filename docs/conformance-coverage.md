@@ -15,11 +15,13 @@ recurrence.
 - `before`, `after`, and half-open bounded queries for finite and infinite rules.
 - Recurrence-set merging, `RDATE`, `EXDATE`, programmatic exclusion rules, duplicate removal, and
   bounded queries over infinite rules.
-- Date-only, floating, UTC, and TZID-bearing values across daylight-saving gaps and overlaps.
+- Date-only, floating, UTC, and TZID-bearing values across one-hour and half-hour gaps, overlaps,
+  political offset changes, and a skipped civil date.
 - Dates before the Unix epoch and rules near RFC 5545's maximum four-digit year.
 - RRULE and recurrence-content parsing, validation, serialization, and round trips.
 - Iterator isolation, immutable public models, concurrency, and bounded-result safeguards.
-- Sparse and billion-scale counted-query performance paths.
+- Sparse and billion-scale counted-query performance paths, including transition-aware forward
+  and reverse lookup with indexed-versus-scan parity.
 
 Focused regressions live under `src/commonTest/kotlin/io/github/yallain/rrule/regression`. Additional
 RFC examples, generated properties, timezone matrices, parser tests, and recurrence-set algebra are

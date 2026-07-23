@@ -6,7 +6,10 @@
 [![JitPack](https://jitpack.io/v/yannallain/rrule-kmp.svg)](https://jitpack.io/#yannallain/rrule-kmp)
 [![License: MIT](https://img.shields.io/github/license/yannallain/rrule-kmp)](LICENSE)
 
-`rrule-kmp` is a Kotlin Multiplatform library for strict RFC 5545 recurrence-rule parsing, canonical serialization, lazy occurrence generation, and complete recurrence-set evaluation. Its implementation and tests are shared by JVM, Android, and iOS.
+`rrule-kmp` is a Kotlin Multiplatform library for strict RFC 5545 recurrence-rule parsing,
+canonical serialization, lazy occurrence generation, and complete recurrence-set evaluation. Its
+recurrence engine and tests are shared by JVM, Android, and iOS, with small platform adapters for
+timezone-transition enumeration.
 
 The temporal model deliberately keeps four iCalendar concepts distinct:
 
@@ -267,11 +270,11 @@ platform gates so failures identify the affected consumer surface:
   [Swift consumer fixture](integration-tests/swift-package-consumer/README.md) declares the public
   Git URL and exact release version just like an application package.
 
-The coverage badge reports **Kover JVM coverage**: shared Kotlin code exercised on the JVM. CI
-enforces a 90% line-coverage floor and uploads the XML report to Codecov. Native execution, Swift
-tests, Android device tests, and the R8 consumer are independent CI gates; their results are not
-misrepresented as part of the JVM coverage percentage. A local HTML report is written to
-`build/reports/kover/htmlJvm/index.html` by `koverHtmlReportJvm`.
+The coverage badge reports **Kover JVM coverage** for common and JVM-specific Kotlin code exercised
+on the JVM. CI enforces a 90% line-coverage floor and uploads the XML report to Codecov. Native
+execution, Swift tests, Android device tests, and the R8 consumer remain independent CI gates; they
+are not included in the JVM coverage percentage. `koverHtmlReportJvm` writes a local report to
+`build/reports/kover/htmlJvm/index.html`.
 
 ### Native iOS and Swift
 
@@ -431,10 +434,13 @@ val previous = recurrence.before(windowStart, inclusive = false)
 For rules without `COUNT`, `between`, `after`, and `before` jump directly to the relevant period. A
 finite `UNTIL` is also used as an iteration ceiling, including when every intervening period is
 empty. Counted queries index exact local-prefix cardinalities for date-only, floating, UTC, and
-zoned timelines whose resolver implements `LinearLocalTimeZoneResolver` and opts in for that
-`TZID`, including billion-candidate SECONDLY/MINUTELY prefixes and dense YEARLY expansions.
-`BYSETPOS`, `BYWEEKNO`, transitioning zones, and arbitrary custom resolvers retain a
-correctness-first finite-prefix scan when gaps or post-expansion selection could change `COUNT`.
+zoned timelines, including billion-candidate SECONDLY/MINUTELY prefixes and dense YEARLY
+expansions. With the default resolver, dense counted prefixes whose per-period cardinality is
+stable remain indexed across timezone transitions: nonexistent local candidates are removed from
+the count, while an overlap still represents one occurrence under the selected ambiguity policy.
+`BYSETPOS`, `BYWEEKNO`, variable calendar prefixes in transitioning zones, and arbitrary custom
+transitioning resolvers retain a correctness-first finite-prefix scan when post-expansion
+selection or unknown gap behavior could change `COUNT`.
 Recurrence-set reverse queries preserve exclusion precedence without replaying unbounded inclusion
 rules from `DTSTART`.
 
@@ -676,16 +682,18 @@ themselves follow normal Kotlin iterator rules and should not be concurrently ad
 The engine iterates calendar periods rather than seconds for daily-or-larger rules. YEARLY scans at
 most one week-year, MONTHLY at most one month, and WEEKLY one week per interval. Smaller
 frequencies jump directly across calendar and clock ranges that their limiting filters cannot
-match. Count-aware candidate indexing avoids replaying dense linear prefixes, and absolute bounds
-on the non-selected branch of a DST overlap use conservative overlap-width padding instead of
-restarting at `DTSTART`. Candidate date-times are streamed in chronological order instead of
-materializing a period's Cartesian product. `BYSETPOS` reads only as far as the most distant
-requested position from each end of a period. Iteration ends at `COUNT`, `UNTIL`, a query bound,
-caller cancellation, or RFC 5545's four-digit year boundary; it has no application-defined
-horizon.
+match. Count-aware candidate indexing avoids replaying dense prefixes. For the default timezone
+resolver, it accounts for forward offset gaps from platform timezone data and uses logarithmic
+instant lookup for reverse queries around overlaps. Absolute bounds on a non-selected overlap
+branch use conservative overlap-width padding instead of restarting at `DTSTART`. Candidate
+date-times are streamed in chronological order instead of materializing a period's Cartesian
+product. `BYSETPOS` reads only as far as the most distant requested position from each end of a
+period. Iteration ends at `COUNT`, `UNTIL`, a query bound, caller cancellation, or RFC 5545's
+four-digit year boundary; it has no application-defined horizon.
 
 Performance smoke tests cover 100,000 daily instances, sparse leap-day and secondly rules,
 maximum-cardinality yearly expansions, billion-candidate counted SECONDLY/MINUTELY prefixes,
+far counted queries across one-hour, half-hour, political, and skipped-date timezone transitions,
 far-future monthly/yearly windows, and a 20,000-result multi-rule recurrence set.
 
 ## Known limitations
