@@ -1,0 +1,5 @@
+jdk:
+  - openjdk21
+
+install:
+  - ./scripts/ci/build-jitpack-publications.sh

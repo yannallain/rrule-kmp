@@ -1,0 +1,427 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.yallain:rrule-kmp>
+final enum class io.github.yallain.rrule/AmbiguousTimePolicy : kotlin/Enum<io.github.yallain.rrule/AmbiguousTimePolicy> { // io.github.yallain.rrule/AmbiguousTimePolicy|null[0]
+    enum entry EARLIER // io.github.yallain.rrule/AmbiguousTimePolicy.EARLIER|null[0]
+    enum entry LATER // io.github.yallain.rrule/AmbiguousTimePolicy.LATER|null[0]
+
+    final val entries // io.github.yallain.rrule/AmbiguousTimePolicy.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<io.github.yallain.rrule/AmbiguousTimePolicy> // io.github.yallain.rrule/AmbiguousTimePolicy.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): io.github.yallain.rrule/AmbiguousTimePolicy // io.github.yallain.rrule/AmbiguousTimePolicy.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<io.github.yallain.rrule/AmbiguousTimePolicy> // io.github.yallain.rrule/AmbiguousTimePolicy.values|values#static(){}[0]
+}
+
+final enum class io.github.yallain.rrule/Frequency : kotlin/Enum<io.github.yallain.rrule/Frequency> { // io.github.yallain.rrule/Frequency|null[0]
+    enum entry DAILY // io.github.yallain.rrule/Frequency.DAILY|null[0]
+    enum entry HOURLY // io.github.yallain.rrule/Frequency.HOURLY|null[0]
+    enum entry MINUTELY // io.github.yallain.rrule/Frequency.MINUTELY|null[0]
+    enum entry MONTHLY // io.github.yallain.rrule/Frequency.MONTHLY|null[0]
+    enum entry SECONDLY // io.github.yallain.rrule/Frequency.SECONDLY|null[0]
+    enum entry WEEKLY // io.github.yallain.rrule/Frequency.WEEKLY|null[0]
+    enum entry YEARLY // io.github.yallain.rrule/Frequency.YEARLY|null[0]
+
+    final val entries // io.github.yallain.rrule/Frequency.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<io.github.yallain.rrule/Frequency> // io.github.yallain.rrule/Frequency.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): io.github.yallain.rrule/Frequency // io.github.yallain.rrule/Frequency.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<io.github.yallain.rrule/Frequency> // io.github.yallain.rrule/Frequency.values|values#static(){}[0]
+}
+
+final enum class io.github.yallain.rrule/RecurrenceErrorReason : kotlin/Enum<io.github.yallain.rrule/RecurrenceErrorReason> { // io.github.yallain.rrule/RecurrenceErrorReason|null[0]
+    enum entry DUPLICATE_PROPERTY // io.github.yallain.rrule/RecurrenceErrorReason.DUPLICATE_PROPERTY|null[0]
+    enum entry EMPTY_VALUE // io.github.yallain.rrule/RecurrenceErrorReason.EMPTY_VALUE|null[0]
+    enum entry INCOMPATIBLE_TEMPORAL_TYPE // io.github.yallain.rrule/RecurrenceErrorReason.INCOMPATIBLE_TEMPORAL_TYPE|null[0]
+    enum entry INVALID_COMBINATION // io.github.yallain.rrule/RecurrenceErrorReason.INVALID_COMBINATION|null[0]
+    enum entry MALFORMED_TOKEN // io.github.yallain.rrule/RecurrenceErrorReason.MALFORMED_TOKEN|null[0]
+    enum entry MISSING_REQUIRED_PROPERTY // io.github.yallain.rrule/RecurrenceErrorReason.MISSING_REQUIRED_PROPERTY|null[0]
+    enum entry MUTUALLY_EXCLUSIVE // io.github.yallain.rrule/RecurrenceErrorReason.MUTUALLY_EXCLUSIVE|null[0]
+    enum entry OUT_OF_RANGE // io.github.yallain.rrule/RecurrenceErrorReason.OUT_OF_RANGE|null[0]
+    enum entry UNKNOWN_PROPERTY // io.github.yallain.rrule/RecurrenceErrorReason.UNKNOWN_PROPERTY|null[0]
+
+    final val entries // io.github.yallain.rrule/RecurrenceErrorReason.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<io.github.yallain.rrule/RecurrenceErrorReason> // io.github.yallain.rrule/RecurrenceErrorReason.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): io.github.yallain.rrule/RecurrenceErrorReason // io.github.yallain.rrule/RecurrenceErrorReason.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<io.github.yallain.rrule/RecurrenceErrorReason> // io.github.yallain.rrule/RecurrenceErrorReason.values|values#static(){}[0]
+}
+
+final enum class io.github.yallain.rrule/Weekday : kotlin/Enum<io.github.yallain.rrule/Weekday> { // io.github.yallain.rrule/Weekday|null[0]
+    enum entry FRIDAY // io.github.yallain.rrule/Weekday.FRIDAY|null[0]
+    enum entry MONDAY // io.github.yallain.rrule/Weekday.MONDAY|null[0]
+    enum entry SATURDAY // io.github.yallain.rrule/Weekday.SATURDAY|null[0]
+    enum entry SUNDAY // io.github.yallain.rrule/Weekday.SUNDAY|null[0]
+    enum entry THURSDAY // io.github.yallain.rrule/Weekday.THURSDAY|null[0]
+    enum entry TUESDAY // io.github.yallain.rrule/Weekday.TUESDAY|null[0]
+    enum entry WEDNESDAY // io.github.yallain.rrule/Weekday.WEDNESDAY|null[0]
+
+    final val entries // io.github.yallain.rrule/Weekday.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<io.github.yallain.rrule/Weekday> // io.github.yallain.rrule/Weekday.entries.<get-entries>|<get-entries>#static(){}[0]
+    final val rfcCode // io.github.yallain.rrule/Weekday.rfcCode|{}rfcCode[0]
+        final fun <get-rfcCode>(): kotlin/String // io.github.yallain.rrule/Weekday.rfcCode.<get-rfcCode>|<get-rfcCode>(){}[0]
+
+    final fun valueOf(kotlin/String): io.github.yallain.rrule/Weekday // io.github.yallain.rrule/Weekday.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<io.github.yallain.rrule/Weekday> // io.github.yallain.rrule/Weekday.values|values#static(){}[0]
+
+    final object Companion { // io.github.yallain.rrule/Weekday.Companion|null[0]
+        final fun fromRfcCode(kotlin/String): io.github.yallain.rrule/Weekday? // io.github.yallain.rrule/Weekday.Companion.fromRfcCode|fromRfcCode(kotlin.String){}[0]
+    }
+}
+
+abstract fun interface io.github.yallain.rrule/RecurrenceTimeZoneResolver { // io.github.yallain.rrule/RecurrenceTimeZoneResolver|null[0]
+    abstract fun resolve(kotlinx.datetime/LocalDateTime, kotlin/String): io.github.yallain.rrule/LocalTimeResolution // io.github.yallain.rrule/RecurrenceTimeZoneResolver.resolve|resolve(kotlinx.datetime.LocalDateTime;kotlin.String){}[0]
+    open fun localDateTimeAt(kotlin.time/Instant, kotlin/String): kotlinx.datetime/LocalDateTime? // io.github.yallain.rrule/RecurrenceTimeZoneResolver.localDateTimeAt|localDateTimeAt(kotlin.time.Instant;kotlin.String){}[0]
+    open fun nonexistentInstant(kotlinx.datetime/LocalDateTime, kotlin/String): kotlin.time/Instant? // io.github.yallain.rrule/RecurrenceTimeZoneResolver.nonexistentInstant|nonexistentInstant(kotlinx.datetime.LocalDateTime;kotlin.String){}[0]
+}
+
+abstract interface io.github.yallain.rrule/LinearLocalTimeZoneResolver : io.github.yallain.rrule/RecurrenceTimeZoneResolver { // io.github.yallain.rrule/LinearLocalTimeZoneResolver|null[0]
+    abstract fun hasLinearLocalTimeline(kotlin/String): kotlin/Boolean // io.github.yallain.rrule/LinearLocalTimeZoneResolver.hasLinearLocalTimeline|hasLinearLocalTimeline(kotlin.String){}[0]
+}
+
+abstract interface io.github.yallain.rrule/Recurrence { // io.github.yallain.rrule/Recurrence|null[0]
+    abstract fun after(io.github.yallain.rrule/RecurrenceDateTime, kotlin/Boolean = ...): io.github.yallain.rrule/RecurrenceDateTime? // io.github.yallain.rrule/Recurrence.after|after(io.github.yallain.rrule.RecurrenceDateTime;kotlin.Boolean){}[0]
+    abstract fun before(io.github.yallain.rrule/RecurrenceDateTime, kotlin/Boolean = ...): io.github.yallain.rrule/RecurrenceDateTime? // io.github.yallain.rrule/Recurrence.before|before(io.github.yallain.rrule.RecurrenceDateTime;kotlin.Boolean){}[0]
+    abstract fun between(io.github.yallain.rrule/RecurrenceDateTime, io.github.yallain.rrule/RecurrenceDateTime, kotlin/Int? = ...): kotlin.collections/List<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/Recurrence.between|between(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceDateTime;kotlin.Int?){}[0]
+    abstract fun occurrences(): kotlin.sequences/Sequence<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/Recurrence.occurrences|occurrences(){}[0]
+}
+
+sealed interface io.github.yallain.rrule/LocalTimeResolution { // io.github.yallain.rrule/LocalTimeResolution|null[0]
+    final class Ambiguous : io.github.yallain.rrule/LocalTimeResolution { // io.github.yallain.rrule/LocalTimeResolution.Ambiguous|null[0]
+        constructor <init>(kotlin.time/Instant, kotlin.time/Instant) // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.<init>|<init>(kotlin.time.Instant;kotlin.time.Instant){}[0]
+
+        final val earlier // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.earlier|{}earlier[0]
+            final fun <get-earlier>(): kotlin.time/Instant // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.earlier.<get-earlier>|<get-earlier>(){}[0]
+        final val later // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.later|{}later[0]
+            final fun <get-later>(): kotlin.time/Instant // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.later.<get-later>|<get-later>(){}[0]
+
+        final fun component1(): kotlin.time/Instant // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.component1|component1(){}[0]
+        final fun component2(): kotlin.time/Instant // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.component2|component2(){}[0]
+        final fun copy(kotlin.time/Instant = ..., kotlin.time/Instant = ...): io.github.yallain.rrule/LocalTimeResolution.Ambiguous // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.copy|copy(kotlin.time.Instant;kotlin.time.Instant){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/LocalTimeResolution.Ambiguous.toString|toString(){}[0]
+    }
+
+    final class Valid : io.github.yallain.rrule/LocalTimeResolution { // io.github.yallain.rrule/LocalTimeResolution.Valid|null[0]
+        constructor <init>(kotlin.time/Instant) // io.github.yallain.rrule/LocalTimeResolution.Valid.<init>|<init>(kotlin.time.Instant){}[0]
+
+        final val instant // io.github.yallain.rrule/LocalTimeResolution.Valid.instant|{}instant[0]
+            final fun <get-instant>(): kotlin.time/Instant // io.github.yallain.rrule/LocalTimeResolution.Valid.instant.<get-instant>|<get-instant>(){}[0]
+
+        final fun component1(): kotlin.time/Instant // io.github.yallain.rrule/LocalTimeResolution.Valid.component1|component1(){}[0]
+        final fun copy(kotlin.time/Instant = ...): io.github.yallain.rrule/LocalTimeResolution.Valid // io.github.yallain.rrule/LocalTimeResolution.Valid.copy|copy(kotlin.time.Instant){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/LocalTimeResolution.Valid.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/LocalTimeResolution.Valid.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/LocalTimeResolution.Valid.toString|toString(){}[0]
+    }
+
+    final object Nonexistent : io.github.yallain.rrule/LocalTimeResolution { // io.github.yallain.rrule/LocalTimeResolution.Nonexistent|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/LocalTimeResolution.Nonexistent.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/LocalTimeResolution.Nonexistent.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/LocalTimeResolution.Nonexistent.toString|toString(){}[0]
+    }
+}
+
+sealed interface io.github.yallain.rrule/RecurrenceDateTime { // io.github.yallain.rrule/RecurrenceDateTime|null[0]
+    final class DateOnly : io.github.yallain.rrule/RecurrenceDateTime { // io.github.yallain.rrule/RecurrenceDateTime.DateOnly|null[0]
+        constructor <init>(kotlinx.datetime/LocalDate) // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.<init>|<init>(kotlinx.datetime.LocalDate){}[0]
+
+        final val date // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.date|{}date[0]
+            final fun <get-date>(): kotlinx.datetime/LocalDate // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.date.<get-date>|<get-date>(){}[0]
+
+        final fun component1(): kotlinx.datetime/LocalDate // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.component1|component1(){}[0]
+        final fun copy(kotlinx.datetime/LocalDate = ...): io.github.yallain.rrule/RecurrenceDateTime.DateOnly // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.copy|copy(kotlinx.datetime.LocalDate){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrenceDateTime.DateOnly.toString|toString(){}[0]
+    }
+
+    final class Floating : io.github.yallain.rrule/RecurrenceDateTime { // io.github.yallain.rrule/RecurrenceDateTime.Floating|null[0]
+        constructor <init>(kotlinx.datetime/LocalDateTime) // io.github.yallain.rrule/RecurrenceDateTime.Floating.<init>|<init>(kotlinx.datetime.LocalDateTime){}[0]
+
+        final val dateTime // io.github.yallain.rrule/RecurrenceDateTime.Floating.dateTime|{}dateTime[0]
+            final fun <get-dateTime>(): kotlinx.datetime/LocalDateTime // io.github.yallain.rrule/RecurrenceDateTime.Floating.dateTime.<get-dateTime>|<get-dateTime>(){}[0]
+
+        final fun component1(): kotlinx.datetime/LocalDateTime // io.github.yallain.rrule/RecurrenceDateTime.Floating.component1|component1(){}[0]
+        final fun copy(kotlinx.datetime/LocalDateTime = ...): io.github.yallain.rrule/RecurrenceDateTime.Floating // io.github.yallain.rrule/RecurrenceDateTime.Floating.copy|copy(kotlinx.datetime.LocalDateTime){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrenceDateTime.Floating.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrenceDateTime.Floating.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrenceDateTime.Floating.toString|toString(){}[0]
+    }
+
+    final class Utc : io.github.yallain.rrule/RecurrenceDateTime { // io.github.yallain.rrule/RecurrenceDateTime.Utc|null[0]
+        constructor <init>(kotlin.time/Instant) // io.github.yallain.rrule/RecurrenceDateTime.Utc.<init>|<init>(kotlin.time.Instant){}[0]
+
+        final val instant // io.github.yallain.rrule/RecurrenceDateTime.Utc.instant|{}instant[0]
+            final fun <get-instant>(): kotlin.time/Instant // io.github.yallain.rrule/RecurrenceDateTime.Utc.instant.<get-instant>|<get-instant>(){}[0]
+
+        final fun component1(): kotlin.time/Instant // io.github.yallain.rrule/RecurrenceDateTime.Utc.component1|component1(){}[0]
+        final fun copy(kotlin.time/Instant = ...): io.github.yallain.rrule/RecurrenceDateTime.Utc // io.github.yallain.rrule/RecurrenceDateTime.Utc.copy|copy(kotlin.time.Instant){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrenceDateTime.Utc.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrenceDateTime.Utc.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrenceDateTime.Utc.toString|toString(){}[0]
+    }
+
+    final class Zoned : io.github.yallain.rrule/RecurrenceDateTime { // io.github.yallain.rrule/RecurrenceDateTime.Zoned|null[0]
+        constructor <init>(kotlinx.datetime/LocalDateTime, kotlin/String) // io.github.yallain.rrule/RecurrenceDateTime.Zoned.<init>|<init>(kotlinx.datetime.LocalDateTime;kotlin.String){}[0]
+
+        final val dateTime // io.github.yallain.rrule/RecurrenceDateTime.Zoned.dateTime|{}dateTime[0]
+            final fun <get-dateTime>(): kotlinx.datetime/LocalDateTime // io.github.yallain.rrule/RecurrenceDateTime.Zoned.dateTime.<get-dateTime>|<get-dateTime>(){}[0]
+        final val timeZoneId // io.github.yallain.rrule/RecurrenceDateTime.Zoned.timeZoneId|{}timeZoneId[0]
+            final fun <get-timeZoneId>(): kotlin/String // io.github.yallain.rrule/RecurrenceDateTime.Zoned.timeZoneId.<get-timeZoneId>|<get-timeZoneId>(){}[0]
+
+        final fun component1(): kotlinx.datetime/LocalDateTime // io.github.yallain.rrule/RecurrenceDateTime.Zoned.component1|component1(){}[0]
+        final fun component2(): kotlin/String // io.github.yallain.rrule/RecurrenceDateTime.Zoned.component2|component2(){}[0]
+        final fun copy(kotlinx.datetime/LocalDateTime = ..., kotlin/String = ...): io.github.yallain.rrule/RecurrenceDateTime.Zoned // io.github.yallain.rrule/RecurrenceDateTime.Zoned.copy|copy(kotlinx.datetime.LocalDateTime;kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrenceDateTime.Zoned.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrenceDateTime.Zoned.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrenceDateTime.Zoned.toString|toString(){}[0]
+    }
+}
+
+sealed interface io.github.yallain.rrule/RecurrencePeriod { // io.github.yallain.rrule/RecurrencePeriod|null[0]
+    abstract val start // io.github.yallain.rrule/RecurrencePeriod.start|{}start[0]
+        abstract fun <get-start>(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrencePeriod.start.<get-start>|<get-start>(){}[0]
+
+    final class Explicit : io.github.yallain.rrule/RecurrencePeriod { // io.github.yallain.rrule/RecurrencePeriod.Explicit|null[0]
+        constructor <init>(io.github.yallain.rrule/RecurrenceDateTime, io.github.yallain.rrule/RecurrenceDateTime) // io.github.yallain.rrule/RecurrencePeriod.Explicit.<init>|<init>(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceDateTime){}[0]
+
+        final val end // io.github.yallain.rrule/RecurrencePeriod.Explicit.end|{}end[0]
+            final fun <get-end>(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrencePeriod.Explicit.end.<get-end>|<get-end>(){}[0]
+        final val start // io.github.yallain.rrule/RecurrencePeriod.Explicit.start|{}start[0]
+            final fun <get-start>(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrencePeriod.Explicit.start.<get-start>|<get-start>(){}[0]
+
+        final fun component1(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrencePeriod.Explicit.component1|component1(){}[0]
+        final fun component2(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrencePeriod.Explicit.component2|component2(){}[0]
+        final fun copy(io.github.yallain.rrule/RecurrenceDateTime = ..., io.github.yallain.rrule/RecurrenceDateTime = ...): io.github.yallain.rrule/RecurrencePeriod.Explicit // io.github.yallain.rrule/RecurrencePeriod.Explicit.copy|copy(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceDateTime){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrencePeriod.Explicit.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrencePeriod.Explicit.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrencePeriod.Explicit.toString|toString(){}[0]
+    }
+
+    final class WithDuration : io.github.yallain.rrule/RecurrencePeriod { // io.github.yallain.rrule/RecurrencePeriod.WithDuration|null[0]
+        constructor <init>(io.github.yallain.rrule/RecurrenceDateTime, io.github.yallain.rrule/RecurrenceDuration) // io.github.yallain.rrule/RecurrencePeriod.WithDuration.<init>|<init>(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceDuration){}[0]
+
+        final val duration // io.github.yallain.rrule/RecurrencePeriod.WithDuration.duration|{}duration[0]
+            final fun <get-duration>(): io.github.yallain.rrule/RecurrenceDuration // io.github.yallain.rrule/RecurrencePeriod.WithDuration.duration.<get-duration>|<get-duration>(){}[0]
+        final val start // io.github.yallain.rrule/RecurrencePeriod.WithDuration.start|{}start[0]
+            final fun <get-start>(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrencePeriod.WithDuration.start.<get-start>|<get-start>(){}[0]
+
+        final fun component1(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrencePeriod.WithDuration.component1|component1(){}[0]
+        final fun component2(): io.github.yallain.rrule/RecurrenceDuration // io.github.yallain.rrule/RecurrencePeriod.WithDuration.component2|component2(){}[0]
+        final fun copy(io.github.yallain.rrule/RecurrenceDateTime = ..., io.github.yallain.rrule/RecurrenceDuration = ...): io.github.yallain.rrule/RecurrencePeriod.WithDuration // io.github.yallain.rrule/RecurrencePeriod.WithDuration.copy|copy(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceDuration){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrencePeriod.WithDuration.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrencePeriod.WithDuration.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrencePeriod.WithDuration.toString|toString(){}[0]
+    }
+}
+
+final class io.github.yallain.rrule/ByDay { // io.github.yallain.rrule/ByDay|null[0]
+    constructor <init>(io.github.yallain.rrule/Weekday, kotlin/Int? = ...) // io.github.yallain.rrule/ByDay.<init>|<init>(io.github.yallain.rrule.Weekday;kotlin.Int?){}[0]
+
+    final val ordinal // io.github.yallain.rrule/ByDay.ordinal|{}ordinal[0]
+        final fun <get-ordinal>(): kotlin/Int? // io.github.yallain.rrule/ByDay.ordinal.<get-ordinal>|<get-ordinal>(){}[0]
+    final val weekday // io.github.yallain.rrule/ByDay.weekday|{}weekday[0]
+        final fun <get-weekday>(): io.github.yallain.rrule/Weekday // io.github.yallain.rrule/ByDay.weekday.<get-weekday>|<get-weekday>(){}[0]
+
+    final fun component1(): io.github.yallain.rrule/Weekday // io.github.yallain.rrule/ByDay.component1|component1(){}[0]
+    final fun component2(): kotlin/Int? // io.github.yallain.rrule/ByDay.component2|component2(){}[0]
+    final fun copy(io.github.yallain.rrule/Weekday = ..., kotlin/Int? = ...): io.github.yallain.rrule/ByDay // io.github.yallain.rrule/ByDay.copy|copy(io.github.yallain.rrule.Weekday;kotlin.Int?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/ByDay.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.github.yallain.rrule/ByDay.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.github.yallain.rrule/ByDay.toString|toString(){}[0]
+}
+
+final class io.github.yallain.rrule/RecurrenceDefinition { // io.github.yallain.rrule/RecurrenceDefinition|null[0]
+    constructor <init>(io.github.yallain.rrule/RecurrenceDateTime, kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> = ..., kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> = ..., kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> = ..., kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> = ..., kotlin.collections/Set<io.github.yallain.rrule/RecurrencePeriod> = ...) // io.github.yallain.rrule/RecurrenceDefinition.<init>|<init>(io.github.yallain.rrule.RecurrenceDateTime;kotlin.collections.List<io.github.yallain.rrule.RecurrenceRule>;kotlin.collections.List<io.github.yallain.rrule.RecurrenceRule>;kotlin.collections.Set<io.github.yallain.rrule.RecurrenceDateTime>;kotlin.collections.Set<io.github.yallain.rrule.RecurrenceDateTime>;kotlin.collections.Set<io.github.yallain.rrule.RecurrencePeriod>){}[0]
+
+    final val additionalDates // io.github.yallain.rrule/RecurrenceDefinition.additionalDates|{}additionalDates[0]
+        final fun <get-additionalDates>(): kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RecurrenceDefinition.additionalDates.<get-additionalDates>|<get-additionalDates>(){}[0]
+    final val additionalPeriods // io.github.yallain.rrule/RecurrenceDefinition.additionalPeriods|{}additionalPeriods[0]
+        final fun <get-additionalPeriods>(): kotlin.collections/Set<io.github.yallain.rrule/RecurrencePeriod> // io.github.yallain.rrule/RecurrenceDefinition.additionalPeriods.<get-additionalPeriods>|<get-additionalPeriods>(){}[0]
+    final val excludedDates // io.github.yallain.rrule/RecurrenceDefinition.excludedDates|{}excludedDates[0]
+        final fun <get-excludedDates>(): kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RecurrenceDefinition.excludedDates.<get-excludedDates>|<get-excludedDates>(){}[0]
+    final val exclusionRules // io.github.yallain.rrule/RecurrenceDefinition.exclusionRules|{}exclusionRules[0]
+        final fun <get-exclusionRules>(): kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> // io.github.yallain.rrule/RecurrenceDefinition.exclusionRules.<get-exclusionRules>|<get-exclusionRules>(){}[0]
+    final val rules // io.github.yallain.rrule/RecurrenceDefinition.rules|{}rules[0]
+        final fun <get-rules>(): kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> // io.github.yallain.rrule/RecurrenceDefinition.rules.<get-rules>|<get-rules>(){}[0]
+    final val start // io.github.yallain.rrule/RecurrenceDefinition.start|{}start[0]
+        final fun <get-start>(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrenceDefinition.start.<get-start>|<get-start>(){}[0]
+
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrenceDefinition.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrenceDefinition.hashCode|hashCode(){}[0]
+    final fun recurrenceSet(io.github.yallain.rrule/RecurrenceTimeZoneResolver = ..., io.github.yallain.rrule/AmbiguousTimePolicy = ...): io.github.yallain.rrule/RecurrenceSet // io.github.yallain.rrule/RecurrenceDefinition.recurrenceSet|recurrenceSet(io.github.yallain.rrule.RecurrenceTimeZoneResolver;io.github.yallain.rrule.AmbiguousTimePolicy){}[0]
+    final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrenceDefinition.toString|toString(){}[0]
+}
+
+final class io.github.yallain.rrule/RecurrenceDuration { // io.github.yallain.rrule/RecurrenceDuration|null[0]
+    constructor <init>(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...) // io.github.yallain.rrule/RecurrenceDuration.<init>|<init>(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
+
+    final val days // io.github.yallain.rrule/RecurrenceDuration.days|{}days[0]
+        final fun <get-days>(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.days.<get-days>|<get-days>(){}[0]
+    final val hours // io.github.yallain.rrule/RecurrenceDuration.hours|{}hours[0]
+        final fun <get-hours>(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.hours.<get-hours>|<get-hours>(){}[0]
+    final val minutes // io.github.yallain.rrule/RecurrenceDuration.minutes|{}minutes[0]
+        final fun <get-minutes>(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.minutes.<get-minutes>|<get-minutes>(){}[0]
+    final val seconds // io.github.yallain.rrule/RecurrenceDuration.seconds|{}seconds[0]
+        final fun <get-seconds>(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.seconds.<get-seconds>|<get-seconds>(){}[0]
+    final val weeks // io.github.yallain.rrule/RecurrenceDuration.weeks|{}weeks[0]
+        final fun <get-weeks>(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.weeks.<get-weeks>|<get-weeks>(){}[0]
+
+    final fun component1(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.component1|component1(){}[0]
+    final fun component2(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.component2|component2(){}[0]
+    final fun component3(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.component3|component3(){}[0]
+    final fun component4(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.component4|component4(){}[0]
+    final fun component5(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.component5|component5(){}[0]
+    final fun copy(kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ..., kotlin/Int = ...): io.github.yallain.rrule/RecurrenceDuration // io.github.yallain.rrule/RecurrenceDuration.copy|copy(kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int;kotlin.Int){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrenceDuration.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrenceDuration.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrenceDuration.toString|toString(){}[0]
+}
+
+final class io.github.yallain.rrule/RecurrenceParseException : kotlin/IllegalArgumentException { // io.github.yallain.rrule/RecurrenceParseException|null[0]
+    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin/String? = ..., io.github.yallain.rrule/RecurrenceErrorReason, kotlin/Int? = ..., kotlin/String) // io.github.yallain.rrule/RecurrenceParseException.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String?;io.github.yallain.rrule.RecurrenceErrorReason;kotlin.Int?;kotlin.String){}[0]
+
+    final val detail // io.github.yallain.rrule/RecurrenceParseException.detail|{}detail[0]
+        final fun <get-detail>(): kotlin/String // io.github.yallain.rrule/RecurrenceParseException.detail.<get-detail>|<get-detail>(){}[0]
+    final val inputValue // io.github.yallain.rrule/RecurrenceParseException.inputValue|{}inputValue[0]
+        final fun <get-inputValue>(): kotlin/String // io.github.yallain.rrule/RecurrenceParseException.inputValue.<get-inputValue>|<get-inputValue>(){}[0]
+    final val invalidToken // io.github.yallain.rrule/RecurrenceParseException.invalidToken|{}invalidToken[0]
+        final fun <get-invalidToken>(): kotlin/String? // io.github.yallain.rrule/RecurrenceParseException.invalidToken.<get-invalidToken>|<get-invalidToken>(){}[0]
+    final val position // io.github.yallain.rrule/RecurrenceParseException.position|{}position[0]
+        final fun <get-position>(): kotlin/Int? // io.github.yallain.rrule/RecurrenceParseException.position.<get-position>|<get-position>(){}[0]
+    final val propertyName // io.github.yallain.rrule/RecurrenceParseException.propertyName|{}propertyName[0]
+        final fun <get-propertyName>(): kotlin/String? // io.github.yallain.rrule/RecurrenceParseException.propertyName.<get-propertyName>|<get-propertyName>(){}[0]
+    final val reason // io.github.yallain.rrule/RecurrenceParseException.reason|{}reason[0]
+        final fun <get-reason>(): io.github.yallain.rrule/RecurrenceErrorReason // io.github.yallain.rrule/RecurrenceParseException.reason.<get-reason>|<get-reason>(){}[0]
+}
+
+final class io.github.yallain.rrule/RecurrenceRule { // io.github.yallain.rrule/RecurrenceRule|null[0]
+    constructor <init>(io.github.yallain.rrule/Frequency, kotlin/Int = ..., kotlin/Int? = ..., io.github.yallain.rrule/RecurrenceDateTime? = ..., io.github.yallain.rrule/Weekday = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/List<io.github.yallain.rrule/ByDay> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ...) // io.github.yallain.rrule/RecurrenceRule.<init>|<init>(io.github.yallain.rrule.Frequency;kotlin.Int;kotlin.Int?;io.github.yallain.rrule.RecurrenceDateTime?;io.github.yallain.rrule.Weekday;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.List<io.github.yallain.rrule.ByDay>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>){}[0]
+
+    final val byDay // io.github.yallain.rrule/RecurrenceRule.byDay|{}byDay[0]
+        final fun <get-byDay>(): kotlin.collections/List<io.github.yallain.rrule/ByDay> // io.github.yallain.rrule/RecurrenceRule.byDay.<get-byDay>|<get-byDay>(){}[0]
+    final val byHour // io.github.yallain.rrule/RecurrenceRule.byHour|{}byHour[0]
+        final fun <get-byHour>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.byHour.<get-byHour>|<get-byHour>(){}[0]
+    final val byMinute // io.github.yallain.rrule/RecurrenceRule.byMinute|{}byMinute[0]
+        final fun <get-byMinute>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.byMinute.<get-byMinute>|<get-byMinute>(){}[0]
+    final val byMonth // io.github.yallain.rrule/RecurrenceRule.byMonth|{}byMonth[0]
+        final fun <get-byMonth>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.byMonth.<get-byMonth>|<get-byMonth>(){}[0]
+    final val byMonthDay // io.github.yallain.rrule/RecurrenceRule.byMonthDay|{}byMonthDay[0]
+        final fun <get-byMonthDay>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.byMonthDay.<get-byMonthDay>|<get-byMonthDay>(){}[0]
+    final val bySecond // io.github.yallain.rrule/RecurrenceRule.bySecond|{}bySecond[0]
+        final fun <get-bySecond>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.bySecond.<get-bySecond>|<get-bySecond>(){}[0]
+    final val bySetPosition // io.github.yallain.rrule/RecurrenceRule.bySetPosition|{}bySetPosition[0]
+        final fun <get-bySetPosition>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.bySetPosition.<get-bySetPosition>|<get-bySetPosition>(){}[0]
+    final val byWeekNumber // io.github.yallain.rrule/RecurrenceRule.byWeekNumber|{}byWeekNumber[0]
+        final fun <get-byWeekNumber>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.byWeekNumber.<get-byWeekNumber>|<get-byWeekNumber>(){}[0]
+    final val byYearDay // io.github.yallain.rrule/RecurrenceRule.byYearDay|{}byYearDay[0]
+        final fun <get-byYearDay>(): kotlin.collections/Set<kotlin/Int> // io.github.yallain.rrule/RecurrenceRule.byYearDay.<get-byYearDay>|<get-byYearDay>(){}[0]
+    final val count // io.github.yallain.rrule/RecurrenceRule.count|{}count[0]
+        final fun <get-count>(): kotlin/Int? // io.github.yallain.rrule/RecurrenceRule.count.<get-count>|<get-count>(){}[0]
+    final val frequency // io.github.yallain.rrule/RecurrenceRule.frequency|{}frequency[0]
+        final fun <get-frequency>(): io.github.yallain.rrule/Frequency // io.github.yallain.rrule/RecurrenceRule.frequency.<get-frequency>|<get-frequency>(){}[0]
+    final val interval // io.github.yallain.rrule/RecurrenceRule.interval|{}interval[0]
+        final fun <get-interval>(): kotlin/Int // io.github.yallain.rrule/RecurrenceRule.interval.<get-interval>|<get-interval>(){}[0]
+    final val until // io.github.yallain.rrule/RecurrenceRule.until|{}until[0]
+        final fun <get-until>(): io.github.yallain.rrule/RecurrenceDateTime? // io.github.yallain.rrule/RecurrenceRule.until.<get-until>|<get-until>(){}[0]
+    final val weekStart // io.github.yallain.rrule/RecurrenceRule.weekStart|{}weekStart[0]
+        final fun <get-weekStart>(): io.github.yallain.rrule/Weekday // io.github.yallain.rrule/RecurrenceRule.weekStart.<get-weekStart>|<get-weekStart>(){}[0]
+
+    final fun copy(io.github.yallain.rrule/Frequency = ..., kotlin/Int = ..., kotlin/Int? = ..., io.github.yallain.rrule/RecurrenceDateTime? = ..., io.github.yallain.rrule/Weekday = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/List<io.github.yallain.rrule/ByDay> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ..., kotlin.collections/Set<kotlin/Int> = ...): io.github.yallain.rrule/RecurrenceRule // io.github.yallain.rrule/RecurrenceRule.copy|copy(io.github.yallain.rrule.Frequency;kotlin.Int;kotlin.Int?;io.github.yallain.rrule.RecurrenceDateTime?;io.github.yallain.rrule.Weekday;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.List<io.github.yallain.rrule.ByDay>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>;kotlin.collections.Set<kotlin.Int>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // io.github.yallain.rrule/RecurrenceRule.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // io.github.yallain.rrule/RecurrenceRule.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // io.github.yallain.rrule/RecurrenceRule.toString|toString(){}[0]
+}
+
+final class io.github.yallain.rrule/RecurrenceSet : io.github.yallain.rrule/Recurrence { // io.github.yallain.rrule/RecurrenceSet|null[0]
+    constructor <init>(io.github.yallain.rrule/RecurrenceDateTime, kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> = ..., kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> = ..., kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> = ..., kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> = ..., io.github.yallain.rrule/RecurrenceTimeZoneResolver = ..., io.github.yallain.rrule/AmbiguousTimePolicy = ..., kotlin.collections/Set<io.github.yallain.rrule/RecurrencePeriod> = ...) // io.github.yallain.rrule/RecurrenceSet.<init>|<init>(io.github.yallain.rrule.RecurrenceDateTime;kotlin.collections.List<io.github.yallain.rrule.RecurrenceRule>;kotlin.collections.List<io.github.yallain.rrule.RecurrenceRule>;kotlin.collections.Set<io.github.yallain.rrule.RecurrenceDateTime>;kotlin.collections.Set<io.github.yallain.rrule.RecurrenceDateTime>;io.github.yallain.rrule.RecurrenceTimeZoneResolver;io.github.yallain.rrule.AmbiguousTimePolicy;kotlin.collections.Set<io.github.yallain.rrule.RecurrencePeriod>){}[0]
+
+    final val additionalDates // io.github.yallain.rrule/RecurrenceSet.additionalDates|{}additionalDates[0]
+        final fun <get-additionalDates>(): kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RecurrenceSet.additionalDates.<get-additionalDates>|<get-additionalDates>(){}[0]
+    final val additionalPeriods // io.github.yallain.rrule/RecurrenceSet.additionalPeriods|{}additionalPeriods[0]
+        final fun <get-additionalPeriods>(): kotlin.collections/Set<io.github.yallain.rrule/RecurrencePeriod> // io.github.yallain.rrule/RecurrenceSet.additionalPeriods.<get-additionalPeriods>|<get-additionalPeriods>(){}[0]
+    final val ambiguousTimePolicy // io.github.yallain.rrule/RecurrenceSet.ambiguousTimePolicy|{}ambiguousTimePolicy[0]
+        final fun <get-ambiguousTimePolicy>(): io.github.yallain.rrule/AmbiguousTimePolicy // io.github.yallain.rrule/RecurrenceSet.ambiguousTimePolicy.<get-ambiguousTimePolicy>|<get-ambiguousTimePolicy>(){}[0]
+    final val excludedDates // io.github.yallain.rrule/RecurrenceSet.excludedDates|{}excludedDates[0]
+        final fun <get-excludedDates>(): kotlin.collections/Set<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RecurrenceSet.excludedDates.<get-excludedDates>|<get-excludedDates>(){}[0]
+    final val exclusionRules // io.github.yallain.rrule/RecurrenceSet.exclusionRules|{}exclusionRules[0]
+        final fun <get-exclusionRules>(): kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> // io.github.yallain.rrule/RecurrenceSet.exclusionRules.<get-exclusionRules>|<get-exclusionRules>(){}[0]
+    final val rules // io.github.yallain.rrule/RecurrenceSet.rules|{}rules[0]
+        final fun <get-rules>(): kotlin.collections/List<io.github.yallain.rrule/RecurrenceRule> // io.github.yallain.rrule/RecurrenceSet.rules.<get-rules>|<get-rules>(){}[0]
+    final val start // io.github.yallain.rrule/RecurrenceSet.start|{}start[0]
+        final fun <get-start>(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RecurrenceSet.start.<get-start>|<get-start>(){}[0]
+    final val timeZoneResolver // io.github.yallain.rrule/RecurrenceSet.timeZoneResolver|{}timeZoneResolver[0]
+        final fun <get-timeZoneResolver>(): io.github.yallain.rrule/RecurrenceTimeZoneResolver // io.github.yallain.rrule/RecurrenceSet.timeZoneResolver.<get-timeZoneResolver>|<get-timeZoneResolver>(){}[0]
+
+    final fun after(io.github.yallain.rrule/RecurrenceDateTime, kotlin/Boolean): io.github.yallain.rrule/RecurrenceDateTime? // io.github.yallain.rrule/RecurrenceSet.after|after(io.github.yallain.rrule.RecurrenceDateTime;kotlin.Boolean){}[0]
+    final fun before(io.github.yallain.rrule/RecurrenceDateTime, kotlin/Boolean): io.github.yallain.rrule/RecurrenceDateTime? // io.github.yallain.rrule/RecurrenceSet.before|before(io.github.yallain.rrule.RecurrenceDateTime;kotlin.Boolean){}[0]
+    final fun between(io.github.yallain.rrule/RecurrenceDateTime, io.github.yallain.rrule/RecurrenceDateTime, kotlin/Int?): kotlin.collections/List<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RecurrenceSet.between|between(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceDateTime;kotlin.Int?){}[0]
+    final fun occurrences(): kotlin.sequences/Sequence<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RecurrenceSet.occurrences|occurrences(){}[0]
+}
+
+final class io.github.yallain.rrule/RecurrenceValidationException : kotlin/IllegalArgumentException { // io.github.yallain.rrule/RecurrenceValidationException|null[0]
+    constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., io.github.yallain.rrule/RecurrenceErrorReason, kotlin/Int? = ..., kotlin/String) // io.github.yallain.rrule/RecurrenceValidationException.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.String?;io.github.yallain.rrule.RecurrenceErrorReason;kotlin.Int?;kotlin.String){}[0]
+
+    final val detail // io.github.yallain.rrule/RecurrenceValidationException.detail|{}detail[0]
+        final fun <get-detail>(): kotlin/String // io.github.yallain.rrule/RecurrenceValidationException.detail.<get-detail>|<get-detail>(){}[0]
+    final val inputValue // io.github.yallain.rrule/RecurrenceValidationException.inputValue|{}inputValue[0]
+        final fun <get-inputValue>(): kotlin/String? // io.github.yallain.rrule/RecurrenceValidationException.inputValue.<get-inputValue>|<get-inputValue>(){}[0]
+    final val invalidToken // io.github.yallain.rrule/RecurrenceValidationException.invalidToken|{}invalidToken[0]
+        final fun <get-invalidToken>(): kotlin/String? // io.github.yallain.rrule/RecurrenceValidationException.invalidToken.<get-invalidToken>|<get-invalidToken>(){}[0]
+    final val position // io.github.yallain.rrule/RecurrenceValidationException.position|{}position[0]
+        final fun <get-position>(): kotlin/Int? // io.github.yallain.rrule/RecurrenceValidationException.position.<get-position>|<get-position>(){}[0]
+    final val propertyName // io.github.yallain.rrule/RecurrenceValidationException.propertyName|{}propertyName[0]
+        final fun <get-propertyName>(): kotlin/String? // io.github.yallain.rrule/RecurrenceValidationException.propertyName.<get-propertyName>|<get-propertyName>(){}[0]
+    final val reason // io.github.yallain.rrule/RecurrenceValidationException.reason|{}reason[0]
+        final fun <get-reason>(): io.github.yallain.rrule/RecurrenceErrorReason // io.github.yallain.rrule/RecurrenceValidationException.reason.<get-reason>|<get-reason>(){}[0]
+}
+
+final class io.github.yallain.rrule/RuleRecurrence : io.github.yallain.rrule/Recurrence { // io.github.yallain.rrule/RuleRecurrence|null[0]
+    constructor <init>(io.github.yallain.rrule/RecurrenceDateTime, io.github.yallain.rrule/RecurrenceRule, io.github.yallain.rrule/RecurrenceTimeZoneResolver = ..., io.github.yallain.rrule/AmbiguousTimePolicy = ...) // io.github.yallain.rrule/RuleRecurrence.<init>|<init>(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceRule;io.github.yallain.rrule.RecurrenceTimeZoneResolver;io.github.yallain.rrule.AmbiguousTimePolicy){}[0]
+
+    final val ambiguousTimePolicy // io.github.yallain.rrule/RuleRecurrence.ambiguousTimePolicy|{}ambiguousTimePolicy[0]
+        final fun <get-ambiguousTimePolicy>(): io.github.yallain.rrule/AmbiguousTimePolicy // io.github.yallain.rrule/RuleRecurrence.ambiguousTimePolicy.<get-ambiguousTimePolicy>|<get-ambiguousTimePolicy>(){}[0]
+    final val rule // io.github.yallain.rrule/RuleRecurrence.rule|{}rule[0]
+        final fun <get-rule>(): io.github.yallain.rrule/RecurrenceRule // io.github.yallain.rrule/RuleRecurrence.rule.<get-rule>|<get-rule>(){}[0]
+    final val start // io.github.yallain.rrule/RuleRecurrence.start|{}start[0]
+        final fun <get-start>(): io.github.yallain.rrule/RecurrenceDateTime // io.github.yallain.rrule/RuleRecurrence.start.<get-start>|<get-start>(){}[0]
+    final val timeZoneResolver // io.github.yallain.rrule/RuleRecurrence.timeZoneResolver|{}timeZoneResolver[0]
+        final fun <get-timeZoneResolver>(): io.github.yallain.rrule/RecurrenceTimeZoneResolver // io.github.yallain.rrule/RuleRecurrence.timeZoneResolver.<get-timeZoneResolver>|<get-timeZoneResolver>(){}[0]
+
+    final fun after(io.github.yallain.rrule/RecurrenceDateTime, kotlin/Boolean): io.github.yallain.rrule/RecurrenceDateTime? // io.github.yallain.rrule/RuleRecurrence.after|after(io.github.yallain.rrule.RecurrenceDateTime;kotlin.Boolean){}[0]
+    final fun before(io.github.yallain.rrule/RecurrenceDateTime, kotlin/Boolean): io.github.yallain.rrule/RecurrenceDateTime? // io.github.yallain.rrule/RuleRecurrence.before|before(io.github.yallain.rrule.RecurrenceDateTime;kotlin.Boolean){}[0]
+    final fun between(io.github.yallain.rrule/RecurrenceDateTime, io.github.yallain.rrule/RecurrenceDateTime, kotlin/Int?): kotlin.collections/List<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RuleRecurrence.between|between(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceDateTime;kotlin.Int?){}[0]
+    final fun occurrences(): kotlin.sequences/Sequence<io.github.yallain.rrule/RecurrenceDateTime> // io.github.yallain.rrule/RuleRecurrence.occurrences|occurrences(){}[0]
+}
+
+final object io.github.yallain.rrule/KotlinxRecurrenceTimeZoneResolver : io.github.yallain.rrule/LinearLocalTimeZoneResolver { // io.github.yallain.rrule/KotlinxRecurrenceTimeZoneResolver|null[0]
+    final fun hasLinearLocalTimeline(kotlin/String): kotlin/Boolean // io.github.yallain.rrule/KotlinxRecurrenceTimeZoneResolver.hasLinearLocalTimeline|hasLinearLocalTimeline(kotlin.String){}[0]
+    final fun localDateTimeAt(kotlin.time/Instant, kotlin/String): kotlinx.datetime/LocalDateTime // io.github.yallain.rrule/KotlinxRecurrenceTimeZoneResolver.localDateTimeAt|localDateTimeAt(kotlin.time.Instant;kotlin.String){}[0]
+    final fun nonexistentInstant(kotlinx.datetime/LocalDateTime, kotlin/String): kotlin.time/Instant // io.github.yallain.rrule/KotlinxRecurrenceTimeZoneResolver.nonexistentInstant|nonexistentInstant(kotlinx.datetime.LocalDateTime;kotlin.String){}[0]
+    final fun resolve(kotlinx.datetime/LocalDateTime, kotlin/String): io.github.yallain.rrule/LocalTimeResolution // io.github.yallain.rrule/KotlinxRecurrenceTimeZoneResolver.resolve|resolve(kotlinx.datetime.LocalDateTime;kotlin.String){}[0]
+}
+
+final object io.github.yallain.rrule/RecurrenceContentParser { // io.github.yallain.rrule/RecurrenceContentParser|null[0]
+    final fun parse(kotlin/String): io.github.yallain.rrule/RecurrenceDefinition // io.github.yallain.rrule/RecurrenceContentParser.parse|parse(kotlin.String){}[0]
+}
+
+final object io.github.yallain.rrule/RecurrencePeriodSerializer { // io.github.yallain.rrule/RecurrencePeriodSerializer|null[0]
+    final fun serialize(io.github.yallain.rrule/RecurrencePeriod): kotlin/String // io.github.yallain.rrule/RecurrencePeriodSerializer.serialize|serialize(io.github.yallain.rrule.RecurrencePeriod){}[0]
+}
+
+final object io.github.yallain.rrule/RecurrenceRuleParser { // io.github.yallain.rrule/RecurrenceRuleParser|null[0]
+    final fun parse(kotlin/String): io.github.yallain.rrule/RecurrenceRule // io.github.yallain.rrule/RecurrenceRuleParser.parse|parse(kotlin.String){}[0]
+}
+
+final object io.github.yallain.rrule/RecurrenceRuleSerializer { // io.github.yallain.rrule/RecurrenceRuleSerializer|null[0]
+    final fun serialize(io.github.yallain.rrule/RecurrenceRule): kotlin/String // io.github.yallain.rrule/RecurrenceRuleSerializer.serialize|serialize(io.github.yallain.rrule.RecurrenceRule){}[0]
+}
+
+final fun (io.github.yallain.rrule/RecurrenceDateTime).io.github.yallain.rrule/toInstantOrNull(io.github.yallain.rrule/RecurrenceTimeZoneResolver = ..., io.github.yallain.rrule/AmbiguousTimePolicy = ...): kotlin.time/Instant? // io.github.yallain.rrule/toInstantOrNull|toInstantOrNull@io.github.yallain.rrule.RecurrenceDateTime(io.github.yallain.rrule.RecurrenceTimeZoneResolver;io.github.yallain.rrule.AmbiguousTimePolicy){}[0]
+final fun (io.github.yallain.rrule/RecurrenceRule).io.github.yallain.rrule/recurrence(io.github.yallain.rrule/RecurrenceDateTime, io.github.yallain.rrule/RecurrenceTimeZoneResolver = ..., io.github.yallain.rrule/AmbiguousTimePolicy = ...): io.github.yallain.rrule/RuleRecurrence // io.github.yallain.rrule/recurrence|recurrence@io.github.yallain.rrule.RecurrenceRule(io.github.yallain.rrule.RecurrenceDateTime;io.github.yallain.rrule.RecurrenceTimeZoneResolver;io.github.yallain.rrule.AmbiguousTimePolicy){}[0]

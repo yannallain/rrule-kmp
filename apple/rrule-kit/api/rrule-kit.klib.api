@@ -1,0 +1,67 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, iosX64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <io.github.yallain:rrule-kit>
+final enum class io.github.yallain.rrule.apple/AppleRecurrenceErrorCode : kotlin/Enum<io.github.yallain.rrule.apple/AppleRecurrenceErrorCode> { // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode|null[0]
+    enum entry EVALUATION_FAILED // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.EVALUATION_FAILED|null[0]
+    enum entry INVALID_ARGUMENT // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.INVALID_ARGUMENT|null[0]
+    enum entry INVALID_CONTENT // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.INVALID_CONTENT|null[0]
+    enum entry RESULT_LIMIT_EXCEEDED // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.RESULT_LIMIT_EXCEEDED|null[0]
+    enum entry UNSUPPORTED_TEMPORAL_DOMAIN // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.UNSUPPORTED_TEMPORAL_DOMAIN|null[0]
+
+    final val entries // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<io.github.yallain.rrule.apple/AppleRecurrenceErrorCode> // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): io.github.yallain.rrule.apple/AppleRecurrenceErrorCode // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<io.github.yallain.rrule.apple/AppleRecurrenceErrorCode> // io.github.yallain.rrule.apple/AppleRecurrenceErrorCode.values|values#static(){}[0]
+}
+
+final class io.github.yallain.rrule.apple/AppleRecurrenceException : kotlin/Exception { // io.github.yallain.rrule.apple/AppleRecurrenceException|null[0]
+    final val code // io.github.yallain.rrule.apple/AppleRecurrenceException.code|{}code[0]
+        final fun <get-code>(): io.github.yallain.rrule.apple/AppleRecurrenceErrorCode // io.github.yallain.rrule.apple/AppleRecurrenceException.code.<get-code>|<get-code>(){}[0]
+    final val inputValue // io.github.yallain.rrule.apple/AppleRecurrenceException.inputValue|{}inputValue[0]
+        final fun <get-inputValue>(): kotlin/String? // io.github.yallain.rrule.apple/AppleRecurrenceException.inputValue.<get-inputValue>|<get-inputValue>(){}[0]
+    final val invalidToken // io.github.yallain.rrule.apple/AppleRecurrenceException.invalidToken|{}invalidToken[0]
+        final fun <get-invalidToken>(): kotlin/String? // io.github.yallain.rrule.apple/AppleRecurrenceException.invalidToken.<get-invalidToken>|<get-invalidToken>(){}[0]
+    final val maximumCount // io.github.yallain.rrule.apple/AppleRecurrenceException.maximumCount|{}maximumCount[0]
+        final fun <get-maximumCount>(): kotlin/Int? // io.github.yallain.rrule.apple/AppleRecurrenceException.maximumCount.<get-maximumCount>|<get-maximumCount>(){}[0]
+    final val position // io.github.yallain.rrule.apple/AppleRecurrenceException.position|{}position[0]
+        final fun <get-position>(): kotlin/Int? // io.github.yallain.rrule.apple/AppleRecurrenceException.position.<get-position>|<get-position>(){}[0]
+    final val propertyName // io.github.yallain.rrule.apple/AppleRecurrenceException.propertyName|{}propertyName[0]
+        final fun <get-propertyName>(): kotlin/String? // io.github.yallain.rrule.apple/AppleRecurrenceException.propertyName.<get-propertyName>|<get-propertyName>(){}[0]
+    final val reason // io.github.yallain.rrule.apple/AppleRecurrenceException.reason|{}reason[0]
+        final fun <get-reason>(): kotlin/String? // io.github.yallain.rrule.apple/AppleRecurrenceException.reason.<get-reason>|<get-reason>(){}[0]
+}
+
+final class io.github.yallain.rrule.apple/AppleRecurrenceInterval { // io.github.yallain.rrule.apple/AppleRecurrenceInterval|null[0]
+    final val endExclusive // io.github.yallain.rrule.apple/AppleRecurrenceInterval.endExclusive|{}endExclusive[0]
+        final fun <get-endExclusive>(): platform.Foundation/NSDate // io.github.yallain.rrule.apple/AppleRecurrenceInterval.endExclusive.<get-endExclusive>|<get-endExclusive>(){}[0]
+    final val start // io.github.yallain.rrule.apple/AppleRecurrenceInterval.start|{}start[0]
+        final fun <get-start>(): platform.Foundation/NSDate // io.github.yallain.rrule.apple/AppleRecurrenceInterval.start.<get-start>|<get-start>(){}[0]
+}
+
+final class io.github.yallain.rrule.apple/AppleRecurrenceIntervalQueryResult { // io.github.yallain.rrule.apple/AppleRecurrenceIntervalQueryResult|null[0]
+    final val hasMore // io.github.yallain.rrule.apple/AppleRecurrenceIntervalQueryResult.hasMore|{}hasMore[0]
+        final fun <get-hasMore>(): kotlin/Boolean // io.github.yallain.rrule.apple/AppleRecurrenceIntervalQueryResult.hasMore.<get-hasMore>|<get-hasMore>(){}[0]
+    final val intervals // io.github.yallain.rrule.apple/AppleRecurrenceIntervalQueryResult.intervals|{}intervals[0]
+        final fun <get-intervals>(): kotlin.collections/List<io.github.yallain.rrule.apple/AppleRecurrenceInterval> // io.github.yallain.rrule.apple/AppleRecurrenceIntervalQueryResult.intervals.<get-intervals>|<get-intervals>(){}[0]
+}
+
+final class io.github.yallain.rrule.apple/AppleRecurrenceSchedule { // io.github.yallain.rrule.apple/AppleRecurrenceSchedule|null[0]
+    final val timeZoneIdentifier // io.github.yallain.rrule.apple/AppleRecurrenceSchedule.timeZoneIdentifier|{}timeZoneIdentifier[0]
+        final fun <get-timeZoneIdentifier>(): kotlin/String? // io.github.yallain.rrule.apple/AppleRecurrenceSchedule.timeZoneIdentifier.<get-timeZoneIdentifier>|<get-timeZoneIdentifier>(){}[0]
+
+    final fun intervals(platform.Foundation/NSDate, platform.Foundation/NSDate, kotlin/Long, kotlin/Int): io.github.yallain.rrule.apple/AppleRecurrenceIntervalQueryResult // io.github.yallain.rrule.apple/AppleRecurrenceSchedule.intervals|intervals(platform.Foundation.NSDate;platform.Foundation.NSDate;kotlin.Long;kotlin.Int){}[0]
+    final fun nextOccurrence(platform.Foundation/NSDate, kotlin/Boolean): platform.Foundation/NSDate? // io.github.yallain.rrule.apple/AppleRecurrenceSchedule.nextOccurrence|nextOccurrence(platform.Foundation.NSDate;kotlin.Boolean){}[0]
+    final fun occurrences(platform.Foundation/NSDate, platform.Foundation/NSDate, kotlin/Int): kotlin.collections/List<platform.Foundation/NSDate> // io.github.yallain.rrule.apple/AppleRecurrenceSchedule.occurrences|occurrences(platform.Foundation.NSDate;platform.Foundation.NSDate;kotlin.Int){}[0]
+    final fun previousOccurrence(platform.Foundation/NSDate, kotlin/Boolean): platform.Foundation/NSDate? // io.github.yallain.rrule.apple/AppleRecurrenceSchedule.previousOccurrence|previousOccurrence(platform.Foundation.NSDate;kotlin.Boolean){}[0]
+}
+
+final object io.github.yallain.rrule.apple/AppleRecurrenceParser { // io.github.yallain.rrule.apple/AppleRecurrenceParser|null[0]
+    final fun parse(kotlin/String): io.github.yallain.rrule.apple/AppleRecurrenceSchedule // io.github.yallain.rrule.apple/AppleRecurrenceParser.parse|parse(kotlin.String){}[0]
+    final fun parse(kotlin/String, kotlin/Boolean): io.github.yallain.rrule.apple/AppleRecurrenceSchedule // io.github.yallain.rrule.apple/AppleRecurrenceParser.parse|parse(kotlin.String;kotlin.Boolean){}[0]
+}

@@ -1,0 +1,17 @@
+.gradle/
+.idea/
+.kotlin/
+.build/
+.swiftpm/
+__pycache__/
+*.py[cod]
+.DS_Store
+build/
+local.properties
+*.iml
+*.xcworkspace/
+*.xcresult/
+DerivedData/
+apple/swift-package/Artifacts/
+integration-tests/swift-package-consumer/Package.resolved
+gradle/gradle-daemon-jvm.properties

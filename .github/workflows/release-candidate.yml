@@ -1,0 +1,250 @@
+name: Release candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Numeric SemVer candidate version, for example 0.1.0
+        required: true
+        type: string
+
+concurrency:
+  group: release-candidate-${{ inputs.version }}
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
+jobs:
+  build:
+    name: Build hosted release candidate
+    runs-on: macos-26
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the requested commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate the candidate request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Candidate versions must use numeric SemVer, for example 0.1.0." >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Candidates must be dispatched from the main branch." >&2
+            exit 1
+          fi
+
+          checked_out_sha="$(git rev-parse HEAD)"
+          main_sha="$(
+            gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha'
+          )"
+          if [[ "$checked_out_sha" != "$GITHUB_SHA" ]]; then
+            echo "The checkout does not match the workflow commit." >&2
+            exit 1
+          fi
+          if [[ "$main_sha" != "$GITHUB_SHA" ]]; then
+            echo "main advanced after this candidate was dispatched; start a new run." >&2
+            exit 1
+          fi
+
+      - name: Verify the pinned Apple toolchain
+        run: |
+          if [[ ! -d "$DEVELOPER_DIR" ]]; then
+            echo "Pinned Xcode is unavailable: $DEVELOPER_DIR" >&2
+            exit 1
+          fi
+
+          xcode_version="$(xcodebuild -version | sed -n '1p')"
+          iphoneos_sdk="$(xcrun --sdk iphoneos --show-sdk-version)"
+          if [[ "$xcode_version" != "Xcode 26.6" ]]; then
+            echo "Expected Xcode 26.6, received: $xcode_version" >&2
+            exit 1
+          fi
+          if [[ "$iphoneos_sdk" != "26.5" ]]; then
+            echo "Expected iPhoneOS SDK 26.5, received: $iphoneos_sdk" >&2
+            exit 1
+          fi
+
+          xcodebuild -version
+          echo "iPhoneOS SDK: $iphoneos_sdk"
+          swift --version
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Ensure Android SDK packages
+        run: ./scripts/ci/ensure-android-sdk-packages.sh
+
+      - name: Select an available iPhone simulator
+        id: simulator
+        run: |
+          simulator_udid="$(
+            xcrun simctl list devices available -j \
+              | jq -r '[.devices[][] | select(.isAvailable == true) | select(.name | startswith("iPhone"))][0].udid'
+          )"
+          if [[ -z "$simulator_udid" || "$simulator_udid" == "null" ]]; then
+            echo "No available iPhone simulator was found." >&2
+            exit 1
+          fi
+          echo "udid=$simulator_udid" >> "$GITHUB_OUTPUT"
+
+      - name: Verify native release candidate
+        env:
+          IOS_SIMULATOR_UDID: ${{ steps.simulator.outputs.udid }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: ./apple/verify-native-ios-release-candidate.sh "$RELEASE_VERSION"
+
+      - name: Verify Maven release candidate
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: ./scripts/release/verify-maven-release-candidate.sh "$RELEASE_VERSION"
+
+      - name: Record the hosted release toolchain
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          distribution="build/distributions/$RELEASE_VERSION"
+          mkdir -p "$distribution"
+          {
+            echo "Runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}"
+            echo
+            echo "Xcode"
+            xcodebuild -version
+            echo
+            echo "Apple SDKs"
+            xcodebuild -showsdks
+            echo
+            echo "iPhoneOS SDK: $(xcrun --sdk iphoneos --show-sdk-version)"
+            echo "iPhoneSimulator SDK: $(xcrun --sdk iphonesimulator --show-sdk-version)"
+            echo
+            echo "Swift"
+            swift --version
+            echo
+            echo "Java"
+            java -version 2>&1
+            echo
+            echo "Gradle"
+            ./gradlew --version
+          } > "$distribution/toolchain-versions.txt"
+
+      - name: Stage the hosted candidate assets
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          version="$RELEASE_VERSION"
+          distribution="build/distributions/$version"
+          xcframework="$distribution/RRuleKmpCore-$version.xcframework.zip"
+          maven="$distribution/rrule-kmp-$version-maven-repository.zip"
+          licenses="$distribution/rrule-kmp-$version-licenses.zip"
+          swift_checksum="$(swift package compute-checksum "$xcframework")"
+          expected_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$version/RRuleKmpCore-$version.xcframework.zip"
+
+          printf '%s\n' "$swift_checksum" > "$distribution/swift-checksum.txt"
+          {
+            echo "url: $expected_url"
+            echo "checksum: $swift_checksum"
+          } > "$distribution/expected-swift-binary-target.txt"
+
+          extract_publication() {
+            local archive_entry="$1"
+            local destination="$2"
+            unzip -p "$maven" "$archive_entry" > "$destination"
+            if [[ ! -s "$destination" ]]; then
+              echo "Maven archive entry is missing or empty: $archive_entry" >&2
+              exit 1
+            fi
+          }
+          extract_publication \
+            "repository/com/github/yannallain/rrule-kmp-android/$version/rrule-kmp-android-$version.aar" \
+            "$distribution/rrule-kmp-android-$version.aar"
+          extract_publication \
+            "repository/com/github/yannallain/rrule-kmp-jvm/$version/rrule-kmp-jvm-$version.jar" \
+            "$distribution/rrule-kmp-jvm-$version.jar"
+          extract_publication \
+            "repository/com/github/yannallain/rrule-kmp/$version/rrule-kmp-$version-sources.jar" \
+            "$distribution/rrule-kmp-$version-sources.jar"
+          cp LICENSE THIRD_PARTY_NOTICES "$distribution/"
+
+          required_assets=(
+            "$xcframework"
+            "$maven"
+            "$licenses"
+            "$distribution/rrule-kmp-android-$version.aar"
+            "$distribution/rrule-kmp-jvm-$version.jar"
+            "$distribution/rrule-kmp-$version-sources.jar"
+            "$distribution/LICENSE"
+            "$distribution/THIRD_PARTY_NOTICES"
+            "$distribution/swift-checksum.txt"
+            "$distribution/expected-swift-binary-target.txt"
+            "$distribution/toolchain-versions.txt"
+          )
+          for required_asset in "${required_assets[@]}"; do
+            if [[ ! -f "$required_asset" ]]; then
+              echo "Missing candidate asset: $required_asset" >&2
+              exit 1
+            fi
+          done
+
+          (
+            cd "$distribution"
+            shasum -a 256 \
+              RRuleKmpCore-"$version".xcframework.zip \
+              rrule-kmp-"$version"-maven-repository.zip \
+              rrule-kmp-"$version"-licenses.zip \
+              rrule-kmp-android-"$version".aar \
+              rrule-kmp-jvm-"$version".jar \
+              rrule-kmp-"$version"-sources.jar \
+              LICENSE \
+              THIRD_PARTY_NOTICES \
+              swift-checksum.txt \
+              expected-swift-binary-target.txt \
+              toolchain-versions.txt \
+              > SHA256SUMS
+            shasum -a 256 -c SHA256SUMS
+          )
+
+          {
+            echo "### Release candidate $version"
+            echo
+            echo "Swift checksum: \`$swift_checksum\`"
+            echo
+            echo "Use the uploaded expected-swift-binary-target.txt values in Package.swift."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the hosted release candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rrule-kmp-release-candidate-${{ inputs.version }}
+          path: |
+            build/distributions/${{ inputs.version }}/RRuleKmpCore-${{ inputs.version }}.xcframework.zip
+            build/distributions/${{ inputs.version }}/rrule-kmp-${{ inputs.version }}-maven-repository.zip
+            build/distributions/${{ inputs.version }}/rrule-kmp-${{ inputs.version }}-licenses.zip
+            build/distributions/${{ inputs.version }}/rrule-kmp-android-${{ inputs.version }}.aar
+            build/distributions/${{ inputs.version }}/rrule-kmp-jvm-${{ inputs.version }}.jar
+            build/distributions/${{ inputs.version }}/rrule-kmp-${{ inputs.version }}-sources.jar
+            build/distributions/${{ inputs.version }}/LICENSE
+            build/distributions/${{ inputs.version }}/THIRD_PARTY_NOTICES
+            build/distributions/${{ inputs.version }}/swift-checksum.txt
+            build/distributions/${{ inputs.version }}/expected-swift-binary-target.txt
+            build/distributions/${{ inputs.version }}/toolchain-versions.txt
+            build/distributions/${{ inputs.version }}/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14

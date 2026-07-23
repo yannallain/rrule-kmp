@@ -1,0 +1,537 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Numeric SemVer release version, for example 0.1.0
+        required: true
+        type: string
+      recovery_sha:
+        description: Optional exact SHA; dispatch from the existing version tag for recovery
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ inputs.version }}
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
+jobs:
+  build:
+    name: Build verified release assets
+    runs-on: macos-26
+    timeout-minutes: 120
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      release-sha: ${{ steps.validate.outputs.release-sha }}
+    steps:
+      - name: Check out the requested commit
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Validate the release request and successful CI
+        id: validate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECOVERY_SHA: ${{ inputs.recovery_sha }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Release versions must use numeric SemVer, for example 0.1.0." >&2
+            exit 1
+          fi
+          requested_sha="$GITHUB_SHA"
+          if [[ -n "$RECOVERY_SHA" ]]; then
+            if [[ ! "$RECOVERY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "A recovery SHA must be an exact 40-character lowercase commit SHA." >&2
+              exit 1
+            fi
+            if [[ "$GITHUB_REF" != "refs/tags/$RELEASE_VERSION" ]]; then
+              echo "Recovery must be dispatched from tag $RELEASE_VERSION." >&2
+              exit 1
+            fi
+            if [[ "$RECOVERY_SHA" != "$GITHUB_SHA" ]]; then
+              echo "The recovery SHA must equal the selected tag's workflow SHA." >&2
+              exit 1
+            fi
+          elif [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "New releases must be dispatched from the main branch." >&2
+            exit 1
+          fi
+
+          checked_out_sha="$(git rev-parse HEAD)"
+          main_sha="$(
+            gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha'
+          )"
+          if [[ "$checked_out_sha" != "$requested_sha" ]]; then
+            echo "The checkout does not match the requested release commit." >&2
+            exit 1
+          fi
+          ci_runs_endpoint="repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs"
+          ci_runs_query="branch=main&event=push&head_sha=$checked_out_sha"
+          ci_runs_query="$ci_runs_query&status=completed&per_page=100"
+          successful_ci_run="$(
+            gh api \
+              "$ci_runs_endpoint?$ci_runs_query" \
+              --jq '
+                [
+                  .workflow_runs[]
+                  | select(
+                      .event == "push"
+                      and .head_branch == "main"
+                      and .conclusion == "success"
+                    )
+                ]
+                | first
+                | .id // empty
+              '
+          )"
+          if [[ -z "$successful_ci_run" ]]; then
+            echo "No successful CI run exists for commit $checked_out_sha." >&2
+            exit 1
+          fi
+
+          tag_ref="$(
+            gh api \
+              "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$RELEASE_VERSION" \
+              --jq \
+              ".[] | select(.ref == \"refs/tags/$RELEASE_VERSION\") | .ref"
+          )"
+          if [[ -n "$tag_ref" ]]; then
+            tag_commit="$(
+              gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_VERSION" \
+                --jq '.sha'
+            )"
+            if [[ "$tag_commit" != "$checked_out_sha" ]]; then
+              echo "Tag $RELEASE_VERSION already targets another commit." >&2
+              exit 1
+            fi
+          fi
+
+          existing_release="$(
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+              --jq \
+              ".[] | select(.tag_name == \"$RELEASE_VERSION\")"
+          )"
+          if [[ -n "$existing_release" ]]; then
+            if [[ -z "$tag_ref" ]]; then
+              if [[ "$(jq -r '.draft' <<< "$existing_release")" != "true" ]]; then
+                echo "Public release $RELEASE_VERSION has no matching tag." >&2
+                exit 1
+              fi
+              draft_target="$(jq -r '.target_commitish' <<< "$existing_release")"
+              if [[ "$main_sha" != "$checked_out_sha" ]] || \
+                 [[ "$draft_target" != "$checked_out_sha" ]]; then
+                echo "An untagged draft can only resume from its current-main target." >&2
+                exit 1
+              fi
+            fi
+            if [[ "$(jq -r '.draft' <<< "$existing_release")" == "false" ]]; then
+              echo "The exact release is already public; verifying it idempotently."
+            fi
+          fi
+
+          if [[ "$main_sha" != "$checked_out_sha" && -z "$tag_ref" ]]; then
+            echo "A historical commit can only recover its existing release tag." >&2
+            exit 1
+          fi
+          if [[ "$main_sha" != "$checked_out_sha" ]]; then
+            echo "Recovering the existing same-commit release tag after main advanced."
+          fi
+
+          echo "Successful CI run: $successful_ci_run"
+          echo "release-sha=$checked_out_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the pinned Apple toolchain
+        run: |
+          if [[ ! -d "$DEVELOPER_DIR" ]]; then
+            echo "Pinned Xcode is unavailable: $DEVELOPER_DIR" >&2
+            exit 1
+          fi
+
+          xcode_version="$(xcodebuild -version | sed -n '1p')"
+          iphoneos_sdk="$(xcrun --sdk iphoneos --show-sdk-version)"
+          if [[ "$xcode_version" != "Xcode 26.6" ]]; then
+            echo "Expected Xcode 26.6, received: $xcode_version" >&2
+            exit 1
+          fi
+          if [[ "$iphoneos_sdk" != "26.5" ]]; then
+            echo "Expected iPhoneOS SDK 26.5, received: $iphoneos_sdk" >&2
+            exit 1
+          fi
+
+          xcodebuild -version
+          echo "iPhoneOS SDK: $iphoneos_sdk"
+          swift --version
+
+      - name: Set up Java
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6
+
+      - name: Ensure Android SDK packages
+        run: ./scripts/ci/ensure-android-sdk-packages.sh
+
+      - name: Select an available iPhone simulator
+        id: simulator
+        run: |
+          simulator_udid="$(
+            xcrun simctl list devices available -j \
+              | jq -r '[.devices[][] | select(.isAvailable == true) | select(.name | startswith("iPhone"))][0].udid'
+          )"
+          if [[ -z "$simulator_udid" || "$simulator_udid" == "null" ]]; then
+            echo "No available iPhone simulator was found." >&2
+            exit 1
+          fi
+          echo "udid=$simulator_udid" >> "$GITHUB_OUTPUT"
+
+      - name: Verify native release candidate
+        env:
+          IOS_SIMULATOR_UDID: ${{ steps.simulator.outputs.udid }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: ./apple/verify-native-ios-release-candidate.sh "$RELEASE_VERSION"
+
+      - name: Verify Maven release candidate
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: ./scripts/release/verify-maven-release-candidate.sh "$RELEASE_VERSION"
+
+      - name: Record the hosted release toolchain
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          distribution="build/distributions/$RELEASE_VERSION"
+          mkdir -p "$distribution"
+          {
+            echo "Runner image: ${ImageOS:-unknown} ${ImageVersion:-unknown}"
+            echo
+            echo "Xcode"
+            xcodebuild -version
+            echo
+            echo "Apple SDKs"
+            xcodebuild -showsdks
+            echo
+            echo "iPhoneOS SDK: $(xcrun --sdk iphoneos --show-sdk-version)"
+            echo "iPhoneSimulator SDK: $(xcrun --sdk iphonesimulator --show-sdk-version)"
+            echo
+            echo "Swift"
+            swift --version
+            echo
+            echo "Java"
+            java -version 2>&1
+            echo
+            echo "Gradle"
+            ./gradlew --version
+          } > "$distribution/toolchain-versions.txt"
+
+      - name: Verify the Swift manifest and stage exact assets
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          version="$RELEASE_VERSION"
+          distribution="build/distributions/$version"
+          xcframework="$distribution/RRuleKmpCore-$version.xcframework.zip"
+          maven="$distribution/rrule-kmp-$version-maven-repository.zip"
+          licenses="$distribution/rrule-kmp-$version-licenses.zip"
+          swift_checksum="$(swift package compute-checksum "$xcframework")"
+          expected_url="https://github.com/$GITHUB_REPOSITORY/releases/download/$version/RRuleKmpCore-$version.xcframework.zip"
+
+          grep -F -- "url: \"$expected_url\"" Package.swift
+          grep -F -- "checksum: \"$swift_checksum\"" Package.swift
+          swift package dump-package > "$distribution/swift-package.json"
+          printf '%s\n' "$swift_checksum" > "$distribution/swift-checksum.txt"
+
+          extract_publication() {
+            local archive_entry="$1"
+            local destination="$2"
+            unzip -p "$maven" "$archive_entry" > "$destination"
+            if [[ ! -s "$destination" ]]; then
+              echo "Maven archive entry is missing or empty: $archive_entry" >&2
+              exit 1
+            fi
+          }
+          extract_publication \
+            "repository/com/github/yannallain/rrule-kmp-android/$version/rrule-kmp-android-$version.aar" \
+            "$distribution/rrule-kmp-android-$version.aar"
+          extract_publication \
+            "repository/com/github/yannallain/rrule-kmp-jvm/$version/rrule-kmp-jvm-$version.jar" \
+            "$distribution/rrule-kmp-jvm-$version.jar"
+          extract_publication \
+            "repository/com/github/yannallain/rrule-kmp/$version/rrule-kmp-$version-sources.jar" \
+            "$distribution/rrule-kmp-$version-sources.jar"
+          cp LICENSE THIRD_PARTY_NOTICES "$distribution/"
+
+          required_assets=(
+            "$xcframework"
+            "$maven"
+            "$licenses"
+            "$distribution/rrule-kmp-android-$version.aar"
+            "$distribution/rrule-kmp-jvm-$version.jar"
+            "$distribution/rrule-kmp-$version-sources.jar"
+            "$distribution/LICENSE"
+            "$distribution/THIRD_PARTY_NOTICES"
+            "$distribution/swift-checksum.txt"
+            "$distribution/swift-package.json"
+            "$distribution/toolchain-versions.txt"
+          )
+          for required_asset in "${required_assets[@]}"; do
+            if [[ ! -f "$required_asset" ]]; then
+              echo "Missing release asset: $required_asset" >&2
+              exit 1
+            fi
+          done
+
+          (
+            cd "$distribution"
+            shasum -a 256 \
+              RRuleKmpCore-"$version".xcframework.zip \
+              rrule-kmp-"$version"-maven-repository.zip \
+              rrule-kmp-"$version"-licenses.zip \
+              rrule-kmp-android-"$version".aar \
+              rrule-kmp-jvm-"$version".jar \
+              rrule-kmp-"$version"-sources.jar \
+              LICENSE \
+              THIRD_PARTY_NOTICES \
+              swift-checksum.txt \
+              swift-package.json \
+              toolchain-versions.txt \
+              > SHA256SUMS
+            shasum -a 256 -c SHA256SUMS
+          )
+
+      - name: Upload the verified release bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rrule-kmp-release-${{ inputs.version }}
+          path: |
+            build/distributions/${{ inputs.version }}/RRuleKmpCore-${{ inputs.version }}.xcframework.zip
+            build/distributions/${{ inputs.version }}/rrule-kmp-${{ inputs.version }}-maven-repository.zip
+            build/distributions/${{ inputs.version }}/rrule-kmp-${{ inputs.version }}-licenses.zip
+            build/distributions/${{ inputs.version }}/rrule-kmp-android-${{ inputs.version }}.aar
+            build/distributions/${{ inputs.version }}/rrule-kmp-jvm-${{ inputs.version }}.jar
+            build/distributions/${{ inputs.version }}/rrule-kmp-${{ inputs.version }}-sources.jar
+            build/distributions/${{ inputs.version }}/LICENSE
+            build/distributions/${{ inputs.version }}/THIRD_PARTY_NOTICES
+            build/distributions/${{ inputs.version }}/swift-checksum.txt
+            build/distributions/${{ inputs.version }}/swift-package.json
+            build/distributions/${{ inputs.version }}/toolchain-versions.txt
+            build/distributions/${{ inputs.version }}/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Attest and publish protected release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release
+    permissions:
+      actions: write
+      attestations: write
+      artifact-metadata: write
+      contents: write
+      id-token: write
+    env:
+      GH_REPO: ${{ github.repository }}
+      RELEASE_SHA: ${{ needs.build.outputs.release-sha }}
+      RELEASE_VERSION: ${{ inputs.version }}
+    steps:
+      - name: Download the verified release bundle
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          name: rrule-kmp-release-${{ inputs.version }}
+          path: release-assets
+
+      - name: Verify the release bundle
+        run: |
+          cd release-assets
+          shasum -a 256 -c SHA256SUMS
+
+      - name: Verify the attestation source commit
+        run: |
+          if [[ "$GITHUB_SHA" != "$RELEASE_SHA" ]]; then
+            echo "The workflow commit does not match the verified release commit." >&2
+            exit 1
+          fi
+
+      - name: Attest release artifacts
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
+        with:
+          subject-checksums: release-assets/SHA256SUMS
+
+      - name: Create or recover the public GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          main_sha="$(
+            gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha'
+          )"
+          tag_ref="$(
+            gh api \
+              "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$RELEASE_VERSION" \
+              --jq \
+              ".[] | select(.ref == \"refs/tags/$RELEASE_VERSION\") | .ref"
+          )"
+          if [[ -n "$tag_ref" ]]; then
+            tag_commit="$(
+              gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_VERSION" \
+                --jq '.sha'
+            )"
+            if [[ "$tag_commit" != "$RELEASE_SHA" ]]; then
+              echo "Tag $RELEASE_VERSION already targets another commit." >&2
+              exit 1
+            fi
+          fi
+
+          if [[ "$main_sha" != "$RELEASE_SHA" && -z "$tag_ref" ]]; then
+            echo "main advanced during the build; start a new release run." >&2
+            exit 1
+          fi
+          if [[ "$main_sha" != "$RELEASE_SHA" ]]; then
+            echo "Recovering the existing same-commit release tag after main advanced."
+          fi
+
+          existing_release="$(
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+              --jq \
+              ".[] | select(.tag_name == \"$RELEASE_VERSION\")"
+          )"
+          if [[ -n "$existing_release" && -z "$tag_ref" ]]; then
+            if [[ "$(jq -r '.draft' <<< "$existing_release")" != "true" ]]; then
+              echo "Public release $RELEASE_VERSION has no matching tag." >&2
+              exit 1
+            fi
+            draft_target="$(jq -r '.target_commitish' <<< "$existing_release")"
+            if [[ "$main_sha" != "$RELEASE_SHA" ]] || \
+               [[ "$draft_target" != "$RELEASE_SHA" ]]; then
+              echo "An untagged draft can only resume from its current-main target." >&2
+              exit 1
+            fi
+          fi
+
+          assets=(
+            "release-assets/RRuleKmpCore-$RELEASE_VERSION.xcframework.zip"
+            "release-assets/rrule-kmp-$RELEASE_VERSION-maven-repository.zip"
+            "release-assets/rrule-kmp-$RELEASE_VERSION-licenses.zip"
+            "release-assets/rrule-kmp-android-$RELEASE_VERSION.aar"
+            "release-assets/rrule-kmp-jvm-$RELEASE_VERSION.jar"
+            "release-assets/rrule-kmp-$RELEASE_VERSION-sources.jar"
+            "release-assets/LICENSE"
+            "release-assets/THIRD_PARTY_NOTICES"
+            "release-assets/swift-checksum.txt"
+            "release-assets/swift-package.json"
+            "release-assets/toolchain-versions.txt"
+            "release-assets/SHA256SUMS"
+          )
+
+          if [[ -n "$existing_release" ]]; then
+            expected_assets_file="$RUNNER_TEMP/expected-release-assets.txt"
+            actual_assets_file="$RUNNER_TEMP/actual-release-assets.txt"
+            printf '%s\n' "${assets[@]##*/}" | sort > "$expected_assets_file"
+            jq -r '.assets[].name' <<< "$existing_release" \
+              | sort \
+              > "$actual_assets_file"
+            unexpected_assets="$(
+              comm -23 "$actual_assets_file" "$expected_assets_file"
+            )"
+            if [[ -n "$unexpected_assets" ]]; then
+              echo "The existing release contains unexpected assets:" >&2
+              echo "$unexpected_assets" >&2
+              exit 1
+            fi
+
+            if [[ "$(jq -r '.draft' <<< "$existing_release")" == "true" ]]; then
+              gh release upload "$RELEASE_VERSION" "${assets[@]}" --clobber
+              gh release edit "$RELEASE_VERSION" \
+                --title "rrule-kmp $RELEASE_VERSION"
+              gh release edit "$RELEASE_VERSION" --draft=false
+            else
+              if ! cmp -s "$expected_assets_file" "$actual_assets_file"; then
+                echo "The public release asset set is incomplete:" >&2
+                diff -u "$expected_assets_file" "$actual_assets_file" >&2 || true
+                exit 1
+              fi
+              published_assets="$RUNNER_TEMP/published-release-assets"
+              mkdir -p "$published_assets"
+              gh release download "$RELEASE_VERSION" --dir "$published_assets"
+              (
+                cd "$published_assets"
+                shasum -a 256 -c SHA256SUMS
+              )
+
+              reproducible_assets=(
+                "RRuleKmpCore-$RELEASE_VERSION.xcframework.zip"
+                "rrule-kmp-$RELEASE_VERSION-maven-repository.zip"
+                "rrule-kmp-$RELEASE_VERSION-licenses.zip"
+                "rrule-kmp-android-$RELEASE_VERSION.aar"
+                "rrule-kmp-jvm-$RELEASE_VERSION.jar"
+                "rrule-kmp-$RELEASE_VERSION-sources.jar"
+                "LICENSE"
+                "THIRD_PARTY_NOTICES"
+                "swift-checksum.txt"
+                "swift-package.json"
+              )
+              for asset in "${reproducible_assets[@]}"; do
+                rebuilt_checksum="$(
+                  awk -v name="$asset" '$2 == name { print $1 }' \
+                    release-assets/SHA256SUMS
+                )"
+                published_checksum="$(
+                  awk -v name="$asset" '$2 == name { print $1 }' \
+                    "$published_assets/SHA256SUMS"
+                )"
+                if [[ ! "$rebuilt_checksum" =~ ^[0-9a-f]{64}$ ]] || \
+                   [[ "$rebuilt_checksum" != "$published_checksum" ]]; then
+                  echo "Published asset differs from the reproducible rebuild: $asset" >&2
+                  exit 1
+                fi
+              done
+            fi
+          elif [[ -n "$tag_ref" ]]; then
+            gh release create "$RELEASE_VERSION" "${assets[@]}" \
+              --verify-tag \
+              --generate-notes \
+              --title "rrule-kmp $RELEASE_VERSION"
+          else
+            gh release create "$RELEASE_VERSION" "${assets[@]}" \
+              --target "$RELEASE_SHA" \
+              --generate-notes \
+              --title "rrule-kmp $RELEASE_VERSION"
+          fi
+
+          published_tag_commit="$(
+            gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_VERSION" \
+              --jq '.sha'
+          )"
+          if [[ "$published_tag_commit" != "$RELEASE_SHA" ]]; then
+            echo "The resulting release tag does not target the verified commit." >&2
+            exit 1
+          fi
+
+          release_state="$(
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION"
+          )"
+          if [[ "$(jq -r '.draft' <<< "$release_state")" != "false" ]]; then
+            echo "The resulting GitHub Release is not public." >&2
+            exit 1
+          fi
+
+          gh workflow run distribution-smoke.yml \
+            --ref main \
+            -f "version=$RELEASE_VERSION"
