@@ -6,19 +6,69 @@
 [![JitPack](https://jitpack.io/v/yannallain/rrule-kmp.svg)](https://jitpack.io/#yannallain/rrule-kmp)
 [![License: MIT](https://img.shields.io/github/license/yannallain/rrule-kmp)](LICENSE)
 
-`rrule-kmp` is a Kotlin Multiplatform library for strict RFC 5545 recurrence-rule parsing,
-canonical serialization, lazy occurrence generation, and complete recurrence-set evaluation. Its
-recurrence engine and tests are shared by JVM, Android, and iOS, with small platform adapters for
-timezone-transition enumeration.
+`rrule-kmp` is a strict RFC 5545 recurrence engine for Kotlin Multiplatform and native iOS. It
+gives Android, JVM, shared Kotlin, and pure Swift applications the same recurrence core and
+documented DST behavior, so scheduling semantics do not drift between platforms.
 
-The temporal model deliberately keeps four iCalendar concepts distinct:
+Consume it as a Kotlin dependency on Android, JVM, or KMP, or through the Foundation-friendly
+`RRuleKit` Swift package on iOS.
 
-- `DateOnly` — a calendar date with no time of day.
-- `Floating` — local date-time fields with no time zone.
-- `Utc` — an absolute `kotlin.time.Instant`.
-- `Zoned` — local date-time fields associated with an iCalendar `TZID`.
+- Strict RRULE parsing and canonical serialization, plus strict recurrence-content parsing.
+- Lazy occurrence generation and bounded `between`, `after`, and `before` queries.
+- Recurrence sets with `DTSTART`, multiple programmatic rules, `RDATE`, `EXDATE`, and exclusion
+  precedence.
+- Explicit date-only, floating, UTC, `TZID`, DST-gap, and overlap semantics.
+- Count-aware indexing for large prefixes, including billion-candidate SECONDLY schedules.
+- Published artifacts verified from clean Kotlin, Android full-R8, Kotlin/Native, and native Swift
+  consumers.
+- Strict-only validation: RFC-invalid input is rejected instead of silently repaired.
 
-Expansion happens in calendar fields. Zoned candidates are resolved only after filters and `BYSETPOS` have been applied, so invalid dates and generated DST-gap candidates are skipped instead of normalized.
+[Quick start](#quick-start) · [Installation](#installation) ·
+[RFC feature matrix](#supported-rfc-feature-matrix) ·
+[Timezone and DST](#timezone-and-dst-semantics) ·
+[Known limitations](#known-limitations)
+
+## Quick start
+
+### Choose the right API
+
+| Input or consumer | Entry point |
+| --- | --- |
+| An RRULE value such as `FREQ=WEEKLY;BYDAY=MO,WE` | `RecurrenceRuleParser.parse`, then `rule.recurrence(start)` |
+| `DTSTART` plus optional `RRULE`, `RDATE`, or `EXDATE` content | `RecurrenceContentParser.parse(...).recurrenceSet()` |
+| Multiple rules or already-structured application data | Construct `RecurrenceDefinition` or `RecurrenceSet` |
+| A pure Swift application | Use `RecurrenceSchedule` from the [native iOS guide](docs/native-ios.md) |
+
+`RecurrenceRuleParser` accepts the value after `RRULE:`, not the `RRULE:` prefix itself. The
+recurrence-content parser accepts at most one `RRULE`; use the programmatic set API when one
+schedule has multiple inclusion rules.
+
+For recurrence content containing a required `DTSTART` and optional `RRULE`, `RDATE`, or `EXDATE`
+lines, parse the complete content and bind it to the lazy recurrence-set engine:
+
+```kotlin
+import io.github.yallain.rrule.RecurrenceContentParser
+import io.github.yallain.rrule.RecurrenceDateTime
+import io.github.yallain.rrule.toInstantOrNull
+import kotlin.time.Instant
+
+val schedule = RecurrenceContentParser.parse(
+    """
+    DTSTART;TZID=Europe/Paris:20170102T090000
+    RRULE:FREQ=WEEKLY;BYDAY=MO,WE;WKST=MO
+    """.trimIndent()
+).recurrenceSet()
+
+val scheduledInstants: List<Instant> = schedule.between(
+    startInclusive = RecurrenceDateTime.Utc(Instant.parse("2017-01-02T00:00:00Z")),
+    endExclusive = RecurrenceDateTime.Utc(Instant.parse("2017-01-09T00:00:00Z")),
+    limit = 100,
+).mapNotNull { it.toInstantOrNull() }
+```
+
+Use `RecurrenceRuleParser` when the input is only an RRULE value, or construct `RecurrenceSet`
+directly when recurrence sources are already structured. Pure Swift applications use the smaller
+Foundation-native API described in the [native iOS guide](docs/native-ios.md).
 
 ## Installation
 
@@ -127,8 +177,8 @@ GitHub Release and builds the Foundation-native `RRuleKit` wrapper. No local Gra
 for normal Swift consumption. The GitHub Release must be published rather than left as a draft so
 that Swift Package Manager can fetch its binary asset.
 
-See the [native iOS integration guide](docs/native-ios.md) for the Swift API, elapsed-duration
-example, local package development, and consumer verification.
+See the [native iOS integration guide](docs/native-ios.md) for the Swift API, interval queries,
+local package development, and consumer verification.
 
 ## Releases
 
@@ -154,165 +204,46 @@ dependencies: retain Maven Central and Google, or provide those dependencies thr
 mirror or cache. Prefer dependency-manager resolution over adding the standalone AAR or JAR
 directly, because Gradle then selects the right variant and dependencies automatically.
 
-Releases use a candidate-first workflow so the checksum committed to `Package.swift` is computed
-on the same hosted macOS and Xcode 26.6 toolchain used for publication. A maintainer first runs the
-[Release candidate workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/release-candidate.yml)
-on `main`, then commits its XCFramework checksum and waits for CI to pass. The protected
-[Release workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/release.yml) rebuilds
-from that green commit in a read-only job. Its verified bundle can be reviewed while the protected
-publish job waits for approval. Approval creates the numeric tag, artifact attestations, and public
-GitHub Release in one protected job, avoiding a human-review window with a public Swift Package
-Manager version whose binary is still held in a private draft.
+Release assets are rebuilt from a green commit, checksummed, attested, and published through a
+protected environment. A post-publication workflow then resolves the numbered JitPack artifacts and
+tagged Swift package from clean consumer projects.
 
-After publishing, the protected job explicitly starts the
-[Distribution smoke workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/distribution-smoke.yml).
-It resolves the public JitPack coordinates in standalone Gradle consumers and resolves the tagged
-Swift package with its released XCFramework. The assets and remote Swift package are publicly
-consumable only after publication and once those external systems can see the release.
+Maintainers should follow the [release guide](docs/releasing.md) for candidate preparation,
+protected publication, recovery, attestation verification, and distribution smoke checks.
 
-## Quick start
+## Platform support and development
 
-### Choose the right API
-
-| Input or consumer | Entry point |
+| Consumer | Supported target |
 | --- | --- |
-| An RRULE value such as `FREQ=WEEKLY;BYDAY=MO,WE` | `RecurrenceRuleParser.parse`, then `rule.recurrence(start)` |
-| `DTSTART` plus optional `RRULE`, `RDATE`, or `EXDATE` content | `RecurrenceContentParser.parse(...).recurrenceSet()` |
-| Multiple rules or already-structured application data | Construct `RecurrenceDefinition` or `RecurrenceSet` |
-| A pure Swift application | Use `RecurrenceSchedule` from the [native iOS guide](docs/native-ios.md) |
+| JVM | Java 11+ bytecode |
+| Android | API 21+; API 21–25 requires core-library desugaring |
+| Kotlin Multiplatform for iOS | arm64 device, arm64 simulator, and x86_64 simulator |
+| Native Swift | iOS 13+ package with arm64 device and arm64/x86_64 simulator slices |
 
-`RecurrenceRuleParser` accepts the value after `RRULE:`, not the `RRULE:` prefix itself. The
-recurrence-content parser accepts at most one `RRULE`; use the programmatic set API when one
-schedule has multiple inclusion rules.
+The Swift package declares iOS 13. Device arm64 and simulator x86_64 slices report iOS 13;
+simulator arm64 reports iOS 14, matching the first Apple-silicon simulator generation. The iOS 13
+floor is compile/link and metadata verified; execution on a real iOS 13 runtime or device is not
+currently part of CI.
 
-For recurrence content containing a required `DTSTART` and optional `RRULE`, `RDATE`, or `EXDATE`
-lines, parse the complete content and bind it to the lazy recurrence-set engine:
-
-```kotlin
-import io.github.yallain.rrule.RecurrenceContentParser
-import io.github.yallain.rrule.RecurrenceDateTime
-import io.github.yallain.rrule.toInstantOrNull
-import kotlin.time.Instant
-
-val schedule = RecurrenceContentParser.parse(
-    """
-    DTSTART;TZID=Europe/Paris:20170101T210000
-    RRULE:FREQ=DAILY;WKST=MO
-    """.trimIndent()
-).recurrenceSet()
-
-val nightStarts: List<Instant> = schedule.between(
-    startInclusive = RecurrenceDateTime.Utc(Instant.parse("2017-01-01T00:00:00Z")),
-    endExclusive = RecurrenceDateTime.Utc(Instant.parse("2017-01-04T00:00:00Z")),
-    limit = 100,
-).mapNotNull { it.toInstantOrNull() }
-```
-
-Use `RecurrenceRuleParser` when the input is only an RRULE value, or construct `RecurrenceSet`
-directly when recurrence sources are already structured. Pure Swift applications use the smaller
-Foundation-native API described in the [native iOS guide](docs/native-ios.md).
-
-## Repository build and targets
-
-The project uses Kotlin 2.3.20, `kotlinx-datetime` 0.8.0, Gradle 9.4.1, and the Android-KMP library
-plugin. Targets are JVM 11+, Android API 21+, iOS device arm64, and iOS simulator arm64/x86_64. The
-Android AAR metadata declares consumer compile SDK 21+ and AGP 8.0+; the checked-in build uses AGP
-9.2.1 and compile SDK 36. Android consumers below API 26 must enable the desugaring setup documented
-below.
-
-Building from a source checkout requires JDK 21, the checked-in Gradle wrapper, and an Android SDK
-with platform 36 configured through `ANDROID_HOME` or `local.properties`. Apple compilation and
-Swift tests additionally require macOS and Xcode. Release checksums are authoritative only when
-produced by the hosted release-candidate job with Xcode 26.6; another local Xcode version remains
-useful for development, but may not reproduce the release archive byte for byte. Gradle and JVM or
-Android consumers do not need Xcode. Native Swift consumers need only a compatible Xcode and Swift
-Package Manager, not Java, Gradle, Kotlin, or an Android SDK.
-
-This repository does not currently publish Kotlin/JS or Wasm artifacts. A web frontend therefore
-needs a dedicated RFC 5545 implementation while sharing payload and acceptance vectors with its
-Kotlin consumers.
-
-```shell
-./gradlew jvmTest
-./gradlew compileKotlinIosSimulatorArm64 compileTestKotlinIosSimulatorArm64
-ANDROID_HOME=/path/to/android-sdk ./gradlew compileAndroidMain testAndroidHostTest
-ANDROID_HOME=/path/to/android-sdk ./gradlew connectedAndroidDeviceTest
-```
-
-ABI baselines under `api/` are checked as part of `check`. All KMP Maven publications can be
-generated and inspected without an external repository:
+The repository currently publishes no Kotlin/JS or Wasm artifact. Native Swift consumers need only
+Xcode and Swift Package Manager. Building the Kotlin project requires JDK 21, the checked-in Gradle
+wrapper, and Android SDK platform 36; Apple targets additionally require macOS and Xcode.
 
 ```shell
 ./gradlew check checkKotlinAbi koverVerifyJvm koverHtmlReportJvm
-./gradlew \
-  -PPUBLICATION_GROUP=com.github.yannallain \
-  -PVERSION_NAME=0.0.0 \
-  publishAllPublicationsToLocalBuildRepository
-
-./gradlew -p integration-tests/published-kmp-consumer \
-  -PrruleVersion=0.0.0 \
-  --refresh-dependencies \
-  jvmTest \
-  compileKotlinIosX64 \
-  compileKotlinIosArm64 \
-  compileKotlinIosSimulatorArm64
+./gradlew compileKotlinIosSimulatorArm64 compileTestKotlinIosSimulatorArm64
+ANDROID_HOME=/path/to/android-sdk ./gradlew compileAndroidMain testAndroidHostTest
 ```
 
-The publish command writes direct Maven metadata, a JVM JAR, an Android AAR, and
-iOS KLIBs beneath `build/repository`. The standalone consumer then proves the
-external Gradle metadata, JVM runtime, and all three Apple variants without
-project substitution. See its
-[fixture documentation](integration-tests/published-kmp-consumer/README.md) and the
-[release checklist](docs/releasing.md) for the candidate, artifact, and protected publication flow.
+CI independently verifies shared/JVM and Android host tests, ABI compatibility, a 90% JVM
+line-coverage floor, Android devices and full-R8 consumers on API 21 and API 36, Kotlin/Native,
+Swift, and clean public-package consumers. The coverage badge is deliberately limited to common
+and JVM Kotlin code executed on the JVM; native, Swift, Android-device, and R8 checks remain
+separate release gates.
 
-### Continuous integration and coverage
-
-The [CI workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/ci.yml) separates the
-platform gates so failures identify the affected consumer surface:
-
-- Linux runs shared/JVM tests, Android host tests, ABI validation, Kover verification, and a
-  standalone consumer of the locally published JitPack-shaped KMP metadata.
-- Android emulators run the device suite and the full-R8 consumer on API 21 and API 36.
-- macOS builds and tests Kotlin/Native, the Swift facade, device/simulator framework slices, the
-  generated Swift package, and device/simulator consumer builds.
-- Publishing a GitHub Release starts a separate clean-cache distribution smoke test against the
-  public JitPack repository and GitHub Release asset. This protects the external Gradle and Swift
-  Package Manager paths that repository-local builds cannot prove. Its
-  [Swift consumer fixture](integration-tests/swift-package-consumer/README.md) declares the public
-  Git URL and exact release version just like an application package.
-
-The coverage badge reports **Kover JVM line coverage** for common and
-JVM-specific Kotlin code exercised on the JVM. CI enforces a 90% line-coverage
-floor, maps every production source to its repository path, and uploads that
-exact executable-line report to Codecov without source-line rewriting.
-Detailed branch coverage remains available in the retained Kover XML and HTML
-reports. Native execution, Swift tests, Android device tests, and the R8
-consumer remain independent CI gates; they are not included in the JVM
-coverage percentage. `koverHtmlReportJvm` writes a local report to
-`build/reports/kover/htmlJvm/index.html`.
-
-### Native iOS and Swift
-
-Native applications normally consume the remote package described in
-[Installation](#native-ios-with-swift-package-manager). For development from a source checkout,
-the project can also generate an `RRuleKit` local package. It wraps a static
-`RRuleKmpCore.xcframework` and exposes Foundation dates, Swift collections, bounded queries, and
-catchable Swift errors. Its instant-oriented facade accepts UTC or `TZID`-bearing `DTSTART` values;
-date-only and floating recurrences remain available through the KMP API. It supports iOS device
-arm64 and simulator arm64/x86_64 while leaving the existing KMP artifact unchanged.
-
-```shell
-./gradlew :apple:rrule-kit:iosSimulatorArm64Test
-./gradlew :apple:rrule-kit:prepareLocalSwiftPackage
-```
-
-Add the generated `build/swift-package` directory—not the binary-less checked-in package fixture—as
-a local package in Xcode and import `RRuleKit`. The checked-in root `Package.swift` is the remote
-package manifest and points to the exact checksum of the released XCFramework. The package declares
-iOS 13 support, and CI verifies compile/link compatibility for device and simulator slices with the
-current Xcode toolchain. A real iOS 13 runtime/device test remains a manual release caveat. See the
-[native iOS integration guide](docs/native-ios.md) for the Swift API, elapsed-duration example,
-consumer tests, and binary-release details.
+See the [published KMP consumer fixture](integration-tests/published-kmp-consumer/README.md),
+[native iOS guide](docs/native-ios.md), [conformance evidence](docs/conformance-coverage.md), and
+[release guide](docs/releasing.md) for the detailed development and verification workflows.
 
 ### Android API 21–25 consumer setup
 
@@ -371,9 +302,13 @@ val canonical = RecurrenceRuleSerializer.serialize(rule)
 // FREQ=WEEKLY;BYDAY=MO,WE,FR
 ```
 
-Parsing is strict. Duplicate rule parts, unknown properties, empty values, malformed integers, invalid ranges, and RFC-invalid rule-part combinations throw `RecurrenceParseException`. The exception contains the input, property, invalid token, reason enum, and source position when available. Direct construction throws the equivalent `RecurrenceValidationException`.
+Parsing is strict. Duplicate rule parts, unknown properties, empty values, malformed integers,
+invalid ranges, and RFC-invalid rule-part combinations throw `RecurrenceParseException`. The
+exception contains the input, property, invalid token, reason enum, and source position when
+available. Direct construction throws the equivalent `RecurrenceValidationException`.
 
-Serialization uses a stable uppercase order, sorts list values, omits default `INTERVAL=1` and `WKST=MO`, and preserves parse/serialize/parse semantics.
+Serialization uses a stable uppercase order, sorts list values, omits default `INTERVAL=1` and
+`WKST=MO`, and preserves parse/serialize/parse semantics.
 
 ### Recurrence content details
 
@@ -424,7 +359,9 @@ val nextOccurrences = recurrence
     .toList()
 ```
 
-`occurrences()` returns a cold `Sequence`; it never materializes an unbounded rule. Calendar periods are generated according to `FREQ` and `INTERVAL`, filtered in RFC order, combined with time components, sorted, and reduced by `BYSETPOS`.
+`occurrences()` returns a cold `Sequence`; it never materializes an unbounded rule. Calendar
+periods are generated according to `FREQ` and `INTERVAL`, filtered in RFC order, combined with time
+components, sorted, and reduced by `BYSETPOS`.
 
 Bounded queries stop at the final relevant period even when that period has no candidates:
 
@@ -516,9 +453,22 @@ domain, UTC and TZID-bearing RDATE/EXDATE values may be mixed and are compared b
 Every public collection is a detached read-only snapshot; `additionalPeriods` preserves the
 period-specific end or duration without changing the start-only occurrence API.
 
-RFC 5545 says `DTSTART` should be synchronized with the recurrence pattern and always defines the first component instance. The result of a mismatched `DTSTART` and RRULE is otherwise undefined by the RFC; the two APIs above make the distinction explicit.
+RFC 5545 says `DTSTART` should be synchronized with the recurrence pattern and always defines the
+first component instance. The result of a mismatched `DTSTART` and RRULE is otherwise undefined by
+the RFC; the two APIs above make the distinction explicit.
 
 ## Timezone and DST semantics
+
+The temporal model keeps four iCalendar domains distinct:
+
+- `DateOnly` — a calendar date with no time of day.
+- `Floating` — local date-time fields with no time zone.
+- `Utc` — an absolute `kotlin.time.Instant`.
+- `Zoned` — local date-time fields associated with an iCalendar `TZID`.
+
+Expansion happens in calendar fields. Zoned candidates are resolved only after filters and
+`BYSETPOS` have been applied, so invalid dates and generated DST-gap candidates are skipped rather
+than silently normalized.
 
 `KotlinxRecurrenceTimeZoneResolver` uses `kotlinx-datetime` and the platform timezone database. Its result is explicit:
 
@@ -534,8 +484,10 @@ sealed interface LocalTimeResolution {
 - An explicitly supplied `DTSTART`, `RDATE`, or `EXDATE` in a gap uses the UTC offset before the gap,
   as required by RFC 5545. Custom resolvers can opt out by returning `null` from
   `nonexistentInstant`, in which case such an explicit value is rejected.
-- An ambiguous fall-back time is one recurrence instance. `AmbiguousTimePolicy.EARLIER` is the default; `LATER` is opt-in.
-- The ambiguity policy controls instant ordering and UTC `UNTIL` comparison. The emitted `Zoned` value continues to preserve its local fields and `TZID`.
+- An ambiguous fall-back time is one recurrence instance. `AmbiguousTimePolicy.EARLIER` is the
+  default; `LATER` is opt-in.
+- The ambiguity policy controls instant ordering and UTC `UNTIL` comparison. The emitted `Zoned`
+  value continues to preserve its local fields and `TZID`.
 - A custom `RecurrenceTimeZoneResolver` can supply application-owned or VTIMEZONE-derived rules.
 - A fixed-offset custom resolver can also implement `LinearLocalTimeZoneResolver` to opt into exact
   counted-prefix indexing. Its contract requires a one-to-one, order-preserving local timeline;
@@ -543,110 +495,12 @@ sealed interface LocalTimeResolution {
 - A resolver should also implement `localDateTimeAt` when UTC or different-TZID query/`UNTIL`
   bounds may be far from `DTSTART`. Resolve-only implementations remain correct, but must scan
   forward and can be expensive for sub-daily rules.
-- UTC and zoned `DTSTART` values require UTC `UNTIL`; floating and date-only starts require matching floating and date-only `UNTIL` values.
+- UTC and zoned `DTSTART` values require UTC `UNTIL`; floating and date-only starts require matching
+  floating and date-only `UNTIL` values.
 
 Floating values are never interpreted in the machine's current timezone. Date-only recurrences
 reject sub-day frequencies. In accordance with RFC 5545, `BYHOUR`, `BYMINUTE`, and `BYSECOND` are
 ignored when legacy input supplies them with a date-only `DTSTART`.
-
-### Elapsed durations from application payloads
-
-An application-specific field such as `duration: 32400` is not an RFC recurrence property and is
-therefore intentionally not parsed by this library. Treating it as elapsed duration is
-unambiguous: resolve each emitted start with the same resolver and ambiguity policy used by the
-recurrence set, then add exactly `32400.seconds` to that start `Instant`.
-
-The following example filters all payload entries tagged `night`, preserves multiple entries with
-that tag, includes a night that began before the attendance, and clips each result to the
-attendance interval:
-
-```kotlin
-import io.github.yallain.rrule.RecurrenceContentParser
-import io.github.yallain.rrule.RecurrenceDateTime
-import io.github.yallain.rrule.toInstantOrNull
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.Instant
-
-data class ScheduleKind(
-    val tags: Set<String>,
-    val frequency: String,
-    val durationSeconds: Long,
-)
-
-data class InstantInterval(
-    val start: Instant,
-    val endExclusive: Instant,
-)
-
-fun elapsedIntervals(
-    scheduleKind: ScheduleKind,
-    attendanceStart: Instant,
-    attendanceEnd: Instant,
-): List<InstantInterval> {
-    require(scheduleKind.durationSeconds > 0)
-    require(attendanceStart < attendanceEnd)
-
-    val duration = scheduleKind.durationSeconds.seconds
-    val schedule = RecurrenceContentParser
-        .parse(scheduleKind.frequency)
-        .recurrenceSet()
-
-    return schedule.between(
-        startInclusive = RecurrenceDateTime.Utc(
-            attendanceStart - duration,
-        ),
-        endExclusive = RecurrenceDateTime.Utc(attendanceEnd),
-    ).mapNotNull { occurrence ->
-        val start = requireNotNull(
-            occurrence.toInstantOrNull(
-                timeZoneResolver = schedule.timeZoneResolver,
-                ambiguousTimePolicy = schedule.ambiguousTimePolicy,
-            ),
-        ) {
-            "Attendance schedules must use UTC or TZID date-times"
-        }
-
-        val clippedStart = maxOf(start, attendanceStart)
-        val clippedEnd = minOf(start + duration, attendanceEnd)
-
-        if (clippedStart < clippedEnd) {
-            InstantInterval(clippedStart, clippedEnd)
-        } else {
-            null
-        }
-    }
-}
-
-fun nightIntervals(
-    scheduleKinds: List<ScheduleKind>,
-    attendanceStart: Instant,
-    attendanceEnd: Instant,
-): List<InstantInterval> = scheduleKinds
-    .filter { "night" in it.tags }
-    .flatMap { scheduleKind ->
-        elapsedIntervals(
-            scheduleKind = scheduleKind,
-            attendanceStart = attendanceStart,
-            attendanceEnd = attendanceEnd,
-        )
-    }
-```
-
-`toInstantOrNull` also applies the RFC offset-before-gap rule for an explicitly supplied gap value;
-it returns `null` for date-only or floating values, which need application-owned context. It throws
-`RecurrenceValidationException` when an absolute value cannot be resolved, such as an unknown
-`TZID` or a custom resolver that cannot provide explicit-gap semantics. Across a DST change, the
-displayed local end time may consequently differ from the usual wall-clock end; the elapsed
-duration remains exactly nine hours.
-
-The helper is for UTC or `TZID`-bearing schedules. Floating and date-only schedules need an
-application-owned timezone before they can become attendance instants. Tags, durations, breaks,
-and rates remain application policy. Normalize overlapping breaks, then union overlapping
-half-open night intervals before subtracting break intersections so the same elapsed time is not
-counted twice in one day/night classification. For rate calculation, retain the source schedule or
-pricing metadata instead when premiums are intended to stack. The executable
-[attendance example](src/commonTest/kotlin/io/github/yallain/rrule/usecase/ElapsedNightScheduleTest.kt)
-covers a previous-day night, a break, and both DST transitions.
 
 ## Supported RFC feature matrix
 
@@ -671,7 +525,7 @@ covers a previous-day night, a break, and both DST transitions.
 | RDATE PERIOD values | Supported | Explicit end and positive duration forms; starts enter the recurrence set and metadata is preserved |
 | Embedded VTIMEZONE parsing | Not yet included | Inject a custom resolver |
 
-## Validation
+## Validation and strict RFC behavior
 
 Construction and parsing enforce, among other constraints:
 
@@ -686,7 +540,18 @@ Construction and parsing enforce, among other constraints:
 - whole-second stored RFC DATE-TIME values (query bounds may retain fractional precision);
 - start-dependent DATE/frequency and `UNTIL` compatibility.
 
-Unknown properties are rejected. There is currently no lenient compatibility mode.
+Unknown properties are rejected. There is currently no lenient compatibility mode. RFC 5545 is
+authoritative, so the library also:
+
+- preserves date-only, floating, UTC, and `TZID` values instead of collapsing them into instants;
+- has no implicit `DTSTART=now` default;
+- separates standalone rule expansion from recurrence sets that always include `DTSTART`;
+- distinguishes skipped generated DST-gap candidates from explicit values that use the RFC
+  offset-before-gap interpretation;
+- applies a documented ambiguity policy to overlap values.
+
+Cross-implementation differences are diagnostic rather than automatically considered defects. See
+the [differential-testing guide](docs/differential-testing.md).
 
 ## Determinism, concurrency, and performance
 
@@ -710,10 +575,10 @@ end of a period. Iteration ends at `COUNT`, `UNTIL`, a query bound, caller cance
 5545's four-digit year boundary; it has no application-defined horizon.
 
 Performance smoke tests cover 100,000 daily instances, sparse leap-day and secondly rules,
-maximum-cardinality yearly expansions, billion-candidate counted SECONDLY/MINUTELY prefixes,
-Gregorian-cycle DAILY/WEEKLY/MONTHLY/YEARLY and `BYWEEKNO` prefixes, far counted queries across
-one-hour, half-hour, political, and skipped-date timezone transitions, far-future monthly/yearly
-windows, and a 20,000-result multi-rule recurrence set.
+maximum-cardinality yearly expansions, billion-candidate counted SECONDLY and large MINUTELY
+prefixes, Gregorian-cycle DAILY/WEEKLY/MONTHLY/YEARLY and `BYWEEKNO` prefixes, far counted queries
+across one-hour, half-hour, political, and skipped-date timezone transitions, far-future
+monthly/yearly windows, and a 20,000-result multi-rule recurrence set.
 
 ## Known limitations
 
@@ -724,34 +589,21 @@ windows, and a 20,000-result multi-rule recurrence set.
 - Timezone results depend on the platform timezone database unless a resolver is injected.
 - Full VCALENDAR/VEVENT and VTIMEZONE parsing remain outside the current API. Recurrence content
   lines, unfolding, TZID parameters, and RDATE PERIOD values are supported.
-- RFC 5545 removed EXRULE. The content parser rejects it, while the programmatic recurrence-set API retains exclusion rules for application-owned inputs.
+- RFC 5545 removed EXRULE. The content parser rejects it, while the programmatic recurrence-set API
+  retains exclusion rules for application-owned inputs.
 - The engine proves common empty rules by checking clock congruence and a complete 400-year
   Gregorian cycle. An unbounded query for a more complex contradiction that is not covered by
   those proofs may still traverse to RFC 5545's four-digit year boundary. Bounded operations stop
   at their calendar bound.
 - The library currently exposes strict RFC behavior only; no permissive compatibility mode is provided.
 
-## Strict RFC behavior
-
-RFC 5545 is authoritative. This library deliberately:
-
-- rejects RFC-invalid rule-part/frequency combinations instead of accepting every BY part everywhere;
-- preserves date-only, floating, UTC, and TZID values instead of collapsing them into one instant representation;
-- has no implicit `DTSTART=now` default;
-- rejects duplicate rule parts and `COUNT` plus `UNTIL`;
-- separates standalone rule expansion from a complete set that always includes `DTSTART`;
-- distinguishes generated DST-gap candidates (skipped) from explicitly supplied gap values (the
-  RFC offset-before-gap interpretation), and documents its overlap policy.
-
-Cross-implementation differences are diagnostic rather than automatically considered defects. See
-[differential testing](docs/differential-testing.md).
-
 ## Tests and evidence
 
 Shared tests include:
 
 - grouped examples from RFC 5545 section 3.8.5.3;
-- edge cases for leap years, invalid month days, signed selectors, week 1/53, `WKST`, DST gaps/overlaps, all temporal kinds, and recurrence sets;
+- edge cases for leap years, invalid month days, signed selectors, week 1/53, `WKST`, DST
+  gaps/overlaps, all temporal kinds, and recurrence sets;
 - parse/serialize/parse round trips and structured parser failures;
 - deterministic generated invariants for ordering, uniqueness, bounds, and count;
 - targeted RFC regression cases;
@@ -763,7 +615,9 @@ covered by focused examples, regression tests, generated invariants, and cross-d
 
 Passing tests are evidence for the listed behavior, not a blanket certification of every possible RFC input.
 
-The hourly example uses [verified RFC erratum 3883](https://www.rfc-editor.org/errata/eid3883) (`UNTIL=19970902T210000Z`), which corrects the published example's UTC boundary.
+The hourly example uses
+[verified RFC erratum 3883](https://www.rfc-editor.org/errata/eid3883)
+(`UNTIL=19970902T210000Z`), which corrects the published example's UTC boundary.
 
 ## Security
 
