@@ -2,8 +2,8 @@
 
 Releases use a candidate-first, protected workflow. The candidate job produces
 the checksum that is committed to `Package.swift`; the release job verifies a
-green `main` commit before it creates either a tag or a draft GitHub Release.
-JitPack and Swift Package Manager are tested again after the draft is published.
+green `main` commit before it publishes a tag and GitHub Release. JitPack and
+Swift Package Manager are tested again after publication.
 
 Release versions are exactly `MAJOR.MINOR.PATCH`, for example `0.1.0`. Do not
 use a `v` prefix, a prerelease suffix, or a moved tag.
@@ -16,10 +16,10 @@ Before the first public release, the owner must:
    canonical `origin`.
 2. Enable GitHub Actions and allow the `GITHUB_TOKEN` permissions declared by
    the workflows. Candidate and build jobs remain read-only; only the protected
-   publish job receives contents, identity-token, attestation, and artifact
-   metadata permissions.
+   publish job receives contents, Actions dispatch, identity-token,
+   attestation, and artifact-metadata permissions.
 3. Create a protected GitHub environment named `release`. Require an owner
-   review before its publish job can create a tag or draft release.
+   review before its publish job can create a tag or public release.
 4. Protect `main` and require the Linux/Kotlin, Android API 21 and API 36, and
    Apple CI jobs before changes can merge.
 5. Add a tag ruleset covering release tags that blocks tag updates and
@@ -105,7 +105,7 @@ CI job to pass. Do not create or push the tag manually. Run the owner-provided
 real iOS 13 runtime/device check now, or keep the documented caveat if that
 environment is still unavailable.
 
-## 3. Create the protected draft release
+## 3. Publish the protected release
 
 On the exact green commit, open **Actions → Release → Run workflow**, select
 `main`, and enter the same version.
@@ -118,11 +118,15 @@ verified SHA. In both cases, CI must have succeeded for that SHA and
 reproduces the XCFramework, Maven repository, legal archive, and checksums.
 
 Only after that build succeeds can the `release` environment approve the small
-publish job. That job downloads and verifies the staged artifacts, records
-GitHub provenance attestations, creates the numeric tag at the verified commit,
-and opens a **draft** GitHub Release.
+publish job. While it waits for approval, download the build job's
+`rrule-kmp-release-<version>` artifact and review its checksums, legal files,
+toolchain record, generated package manifest, and binaries. The publish job
+then downloads and verifies the same staged artifacts, records GitHub
+provenance attestations, and creates the numeric tag and public GitHub Release
+in one protected job. This avoids intentionally leaving a version visible to
+Swift Package Manager while its XCFramework waits in a private draft.
 
-The draft contains:
+The public release contains:
 
 | Asset | Purpose |
 | --- | --- |
@@ -138,7 +142,7 @@ The draft contains:
 | `swift-package.json` | Parsed package manifest captured during the build |
 | `toolchain-versions.txt` | Hosted build-tool versions used for the release |
 
-Download the draft assets and verify the checksums and attestations:
+Download the published assets and verify the checksums and attestations:
 
 ```shell
 shasum -a 256 -c SHA256SUMS
@@ -146,16 +150,26 @@ gh attestation verify RRuleKmpCore-0.1.0.xcframework.zip \
   --repo yannallain/rrule-kmp
 ```
 
-Review the generated notes, legal files, toolchain record, and real iOS 13
-evidence. Publish the draft only when all release evidence is acceptable.
+The generated notes remain editable after publication. If publication stops
+after creating the tag but before completing the release, rerun the workflow
+with `recovery_sha` set to the exact tagged commit. Historical commits are
+accepted only when the same version tag already targets that commit. If the
+release already became public before a runner lost its response, a rerun
+downloads it and verifies its asset set and checksums without replacing it.
+Reproducible binaries, legal files, and package metadata must match the rebuilt
+bundle; the original hosted toolchain record remains release evidence and is
+not expected to equal a later runner image record.
 
 ## 4. Verify public distribution
 
-Publishing the draft starts the
+After publication, the protected release job explicitly dispatches the
 [Distribution smoke workflow](../.github/workflows/distribution-smoke.yml).
-This check deliberately runs after publication because a draft Release asset
-is not publicly downloadable and the workflow is triggered by
-`release.published`.
+This check deliberately runs after publication because a private Release asset
+is not publicly downloadable. The explicit dispatch is required because
+GitHub does not recursively start ordinary workflows for events produced by
+the repository's `GITHUB_TOKEN`; the workflow also retains its
+`release.published` trigger for releases published by a person or another
+credential.
 
 The workflow waits for JitPack to expose:
 

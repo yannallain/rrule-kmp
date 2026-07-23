@@ -151,14 +151,16 @@ on the same hosted macOS and Xcode 26.6 toolchain used for publication. A mainta
 [Release candidate workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/release-candidate.yml)
 on `main`, then commits its XCFramework checksum and waits for CI to pass. The protected
 [Release workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/release.yml) rebuilds
-from that green commit in a read-only job. Only after every check succeeds does its protected
-publish job create the numeric tag, artifact attestations, and draft GitHub Release.
+from that green commit in a read-only job. Its verified bundle can be reviewed while the protected
+publish job waits for approval. Approval creates the numeric tag, artifact attestations, and public
+GitHub Release in one protected job, avoiding a human-review window with a public Swift Package
+Manager version whose binary is still held in a private draft.
 
-Publishing the draft starts the
+After publishing, the protected job explicitly starts the
 [Distribution smoke workflow](https://github.com/yannallain/rrule-kmp/actions/workflows/distribution-smoke.yml).
 It resolves the public JitPack coordinates in standalone Gradle consumers and resolves the tagged
 Swift package with its released XCFramework. The assets and remote Swift package are publicly
-consumable only after the draft is published and those external systems can see the release.
+consumable only after publication and once those external systems can see the release.
 
 ## Quick start
 
