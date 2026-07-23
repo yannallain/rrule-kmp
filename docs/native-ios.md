@@ -1,39 +1,39 @@
-# Native iOS integration
+# Using rrule-kmp from native iOS
 
-`rrule-kmp` has two deliberately separate Apple consumption paths:
+This guide is for pure Swift iOS applications. Kotlin Multiplatform applications should consume
+the Kotlin dependency described in the [main README](../README.md#installation) and use the
+complete Kotlin API.
 
-- KMP applications depend on the root Kotlin Multiplatform artifact and use the complete Kotlin
-  API.
-- Pure Swift applications import the `RRuleKit` Swift Package. Its static `RRuleKmpCore` binary is
-  an implementation detail behind a Foundation-native Swift facade.
+Native applications import the `RRuleKit` Swift package. It exposes Foundation `Date` values,
+Swift collections, bounded queries, and catchable errors while the shared recurrence engine is
+delivered as a prebuilt static XCFramework. Normal consumers need only Xcode and Swift Package
+Manager—no Java, Gradle, or Kotlin toolchain.
 
-The separation keeps Kotlin `Sequence`, sealed hierarchies, and `kotlinx-datetime` types out of the
-supported Swift API. A native iOS consumer needs only Xcode and Swift Package Manager: the Kotlin
-implementation is delivered as a prebuilt XCFramework.
+[Install](#install-with-swift-package-manager) · [Quick start](#quick-start) ·
+[Supported input](#supported-input-and-limits) · [Platform support](#platform-support) ·
+[Local development](#developing-rrulekit-locally)
 
 ## Install with Swift Package Manager
 
-### Xcode
+The examples pin `0.1.0`; use the version shown by the
+[latest release](https://github.com/yannallain/rrule-kmp/releases/latest) for production builds.
 
-Once `0.1.0` is published, add the package directly from GitHub:
+### Xcode
 
 1. Choose **File → Add Package Dependencies**.
 2. Enter `https://github.com/yannallain/rrule-kmp.git`.
 3. Select **Exact Version** and enter `0.1.0`.
 4. Add the `RRuleKit` product to the application target.
 
-Then import the facade:
+Then import the module:
 
 ```swift
 import RRuleKit
 ```
 
-The package automatically downloads the release's checksum-verified XCFramework. Consumer
-applications do not need Java, Gradle, or a Kotlin toolchain.
-
 ### Package.swift
 
-Swift packages can declare the same exact dependency in their manifest:
+Swift packages can declare the same exact dependency:
 
 ```swift
 dependencies: [
@@ -52,194 +52,155 @@ targets: [
 ]
 ```
 
-The exact version becomes resolvable only after both the Git tag and its GitHub Release asset are
-published. The root [`Package.swift`](../Package.swift) is the public, remote-capable manifest. It
-combines the checked-in Foundation-native facade sources with the immutable XCFramework ZIP attached
-to that release.
+Swift Package Manager resolves the tag and downloads the checksum-verified XCFramework from its
+matching GitHub Release. The root [`Package.swift`](../Package.swift) is the public manifest.
 
-## Local package development
+## Quick start
 
-Contributors can build the framework from source and use a generated local package. This path
-requires macOS, Xcode, JDK 21, and a configured Android SDK. Run Gradle commands from the repository
-root:
-
-```shell
-./gradlew :apple:rrule-kit:prepareLocalSwiftPackage
-```
-
-In Xcode, choose **File → Add Package Dependencies → Add Local** and select the generated
-`build/swift-package` directory. Add the `RRuleKit` product to the application target, then:
+Create a schedule from recurrence content containing a UTC or `TZID`-bearing `DTSTART`, then query
+absolute Foundation dates:
 
 ```swift
 import Foundation
 import RRuleKit
 
-let attendanceStart = Date(timeIntervalSince1970: 1_483_315_200)
-let attendanceEnd = attendanceStart.addingTimeInterval(12 * 60 * 60)
-
 let schedule = try RecurrenceSchedule(
     content: """
-    DTSTART;TZID=Europe/Paris:20170101T210000
-    RRULE:FREQ=DAILY;WKST=MO
+    DTSTART;TZID=Europe/Paris:20260720T090000
+    RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR;COUNT=6
     """
 )
 
-let nightIntervals = try schedule.intervals(
-    overlapping: attendanceStart..<attendanceEnd,
-    elapsedDurationSeconds: 32_400,
+let iso8601 = ISO8601DateFormatter()
+let windowStart = iso8601.date(from: "2026-07-20T00:00:00Z")!
+let windowEnd = iso8601.date(from: "2026-07-27T00:00:00Z")!
+
+let starts = try schedule.occurrences(
+    fromInclusive: windowStart,
+    toExclusive: windowEnd,
     maximumCount: 100
 )
 
-let grossNightSeconds = nightIntervals.reduce(0) { total, interval in
-    total + interval.overlapDuration(with: attendanceStart..<attendanceEnd)
+let next = try schedule.nextOccurrence(
+    after: windowEnd,
+    inclusive: false
+)
+```
+
+`occurrences` returns every start in the half-open interval `[windowStart, windowEnd)`. It throws
+instead of returning a partial collection when more than `maximumCount` values match.
+
+### Fixed elapsed-duration intervals
+
+When each occurrence represents a fixed amount of elapsed time, query the complete intervals that
+overlap a window:
+
+```swift
+let oneHourSlots = try schedule.intervals(
+    overlapping: windowStart..<windowEnd,
+    elapsedDurationSeconds: 3_600,
+    maximumCount: 100
+)
+
+let secondsInsideWindow = oneHourSlots.reduce(0) { total, interval in
+    total + interval.overlapDuration(with: windowStart..<windowEnd)
 }
 ```
 
-`intervals` automatically queries far enough before the attendance start to include a night that
-began earlier but still overlaps the attendance. Every end is the start instant plus exactly
-32,400 seconds, including across daylight-saving transitions. `RecurrenceInterval` exposes
-`start` and `endExclusive`, so exact-end adjacency remains unambiguously half-open. Returned values
-are complete schedule intervals, not attendance-clipped values: use `intersection(with:)` or
-`overlapDuration(with:)` before summing an attendance. Summing each interval's full `duration` can
-overcount when the attendance contains only part of a night period.
+Each `RecurrenceInterval` is half-open: `start..<endExclusive`. Its end is the start instant plus
+exactly `elapsedDurationSeconds`, including across daylight-saving transitions. Returned intervals
+retain their complete bounds; use `intersection(with:)` or `overlapDuration(with:)` when only the
+portion inside a query window is needed.
 
-Filtering payload entries by `tags.contains("night")`, subtracting policy-specific breaks, and
-applying pricing rates remain application responsibilities. Multiple matching payload entries must
-be parsed as separate `RecurrenceSchedule` instances when they represent separate rates. For a
-single day-versus-night classification, union every overlapping night interval before
-summing—including overlaps within one schedule when its duration exceeds its cadence and overlaps
-across schedules. For rate calculation, keep the contributing schedules separate when premium
-rates stack. Normalize overlapping breaks and clamp them to the attendance before subtraction.
+## Supported input and limits
 
-The Swift facade also provides:
+- `DTSTART` is required and must either be UTC (`Z`) or carry a `TZID`.
+- The Swift facade is instant-oriented. Date-only and floating starts remain available through the
+  complete Kotlin API but are rejected by `RecurrenceSchedule`.
+- One content block supports at most one `RRULE` plus any supported `RDATE` and `EXDATE` lines. Use
+  separate `RecurrenceSchedule` values for independent rules.
+- Generated local times inside a daylight-saving gap are skipped. During an overlap,
+  `AmbiguousTimePolicy.earlier` is the default; pass `.later` to select the second instant.
+- `timeZoneIdentifier` exposes the `TZID` declared by `DTSTART`, or `nil` for a UTC start.
+- Collection queries may materialize at most `RecurrenceSchedule.maximumResultCount` values
+  (currently 100,000). Split larger windows.
+- Invalid content and evaluation failures are reported as `RRuleError`. Parse failures include an
+  `RRuleDiagnostic` with structured fields when the parser can provide them.
 
-- bounded `occurrences(fromInclusive:toExclusive:maximumCount:)` queries;
-- `nextOccurrence(after:inclusive:)` and `previousOccurrence(before:inclusive:)`;
-- explicit earlier/later daylight-saving overlap selection;
-- `timeZoneIdentifier` for a `TZID`-bearing `DTSTART`;
-- `RRuleError` values that are safe to catch in Swift, with structured parse diagnostics.
+For example, select the later instant during a daylight-saving overlap:
 
-A query may materialize at most `RecurrenceSchedule.maximumResultCount` values (currently 100,000).
-Split larger time windows. Occurrence and interval queries fail with
-`RRuleError.resultLimitExceeded` instead of silently returning an incomplete result. Invalid
-content carries an `RRuleDiagnostic` with the reason, property name, rejected token, source
-position, and original input whenever the core parser can provide them.
+```swift
+let laterSchedule = try RecurrenceSchedule(
+    content: """
+    DTSTART;TZID=Europe/Paris:20261025T023000
+    RRULE:FREQ=DAILY;COUNT=1
+    """,
+    ambiguousTimePolicy: .later
+)
+```
 
-The instant-oriented facade rejects date-only and floating starts. KMP consumers can continue to
-use those temporal domains through the complete Kotlin API.
+## Platform support
 
-## Verification from Swift
+| Slice | Minimum reported iOS version |
+| --- | --- |
+| Device arm64 | iOS 13 |
+| Simulator x86_64 | iOS 13 |
+| Simulator arm64 | iOS 14 |
 
-Regenerate the local package after changing Kotlin or Swift sources, then run its tests on an
-installed simulator. Select a UDID from `xcrun simctl list devices available` rather than relying
-on a model name that may exist in several runtimes:
+The package manifest declares iOS 13. The Apple-silicon simulator slice starts at iOS 14, matching
+the first Apple-silicon simulator generation.
+
+Current release gates verify compilation, linking, architectures, deployment metadata, Swift
+tests, and generic simulator/device consumer builds. They do not execute on a real iOS 13 runtime
+or device. Until that lane exists, iOS 13 is a compile/link compatibility target rather than a
+runtime-certified claim.
+
+## Developing RRuleKit locally
+
+Local framework development requires macOS, Xcode, JDK 21, and a configured Android SDK. From the
+repository root, generate the local package:
 
 ```shell
 ./gradlew :apple:rrule-kit:prepareLocalSwiftPackage
+```
+
+In Xcode, choose **File → Add Package Dependencies → Add Local**, select
+`build/swift-package`, and add the `RRuleKit` product to the application target. Regenerate that
+directory after changing Kotlin or Swift sources.
+
+From the repository root, run the Swift tests against an installed simulator selected by UDID:
+
+```shell
+cd build/swift-package
 export IOS_SIMULATOR_UDID='<available-simulator-udid>'
 xcodebuild test \
   -scheme RRuleKit \
   -destination "platform=iOS Simulator,id=$IOS_SIMULATOR_UDID" \
-  -derivedDataPath build/swift-test-derived-data \
+  -derivedDataPath ../swift-test-derived-data \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-The checked-in Swift tests cover import/linking, `DTSTART`, `TZID`, `RDATE`, `EXDATE`, UTC and zoned
-starts, Paris spring and fall DST, fractional bounds, exact elapsed duration, pre-window lookback,
-half-open adjacency, overlap policy, catchable failures, safe limits, truncation detection,
-concurrent queries, empty windows, and multiple independent schedules. A signing-free generic
-device `build-for-testing` should also be part of release CI so the consumer test bundle is
-final-linked for the device slice:
+Use `xcrun simctl list devices available` to find a UDID. From the repository root, a signing-free
+device link check is also available:
 
 ```shell
+cd build/swift-package
 xcodebuild build-for-testing \
   -scheme RRuleKit \
   -destination 'generic/platform=iOS' \
-  -derivedDataPath build/swift-device-derived-data \
+  -derivedDataPath ../swift-device-derived-data \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-The package declares iOS 13. The XCFramework contains device arm64 plus simulator arm64 and x86_64
-architectures. Device arm64 and simulator x86_64 slices report iOS 13; simulator arm64 reports
-iOS 14, matching the first Apple-silicon simulator generation.
+The checked-in root [`Package.swift`](../Package.swift) points to the released binary. The
+development fixture at
+[`apple/swift-package/Package.swift`](../apple/swift-package/Package.swift) is copied into the
+generated local package with a path-based XCFramework, facade sources, tests, and legal files.
 
-The current release gate verifies compilation, linking, and metadata, but it does not run on a real
-iOS 13 runtime or device. Until that lane exists, iOS 13 is a compile/link compatibility target, not
-a fully runtime-certified claim. Publishing must not remove this caveat merely because the package
-manifest and framework metadata declare iOS 13.
+Maintainers should use the [release guide](releasing.md) for deterministic XCFramework packaging,
+hosted checksum preparation, protected publication, attestations, and clean remote-consumer
+verification.
 
-## Release packaging and publication
-
-Run the local native release-candidate gate with an available simulator. It performs the KMP and
-ABI checks, Swift tests, release-mode simulator and device builds, framework metadata and
-architecture validation, and two cache-free byte-for-byte archive builds:
-
-```shell
-IOS_SIMULATOR_UDID='<available-simulator-udid>' \
-  ./apple/verify-native-ios-release-candidate.sh 0.1.0
-```
-
-This local gate does not certify iOS 13 runtime compatibility. A real iOS 13 runtime or device lane
-is still required before making an unqualified iOS 13 compatibility claim.
-
-Create the deterministic XCFramework ZIP for a release version:
-
-```shell
-./gradlew -PVERSION_NAME=0.1.0 \
-  :apple:rrule-kit:zipRRuleKmpCoreReleaseXCFramework
-
-swift package compute-checksum \
-  build/distributions/0.1.0/RRuleKmpCore-0.1.0.xcframework.zip
-```
-
-There are intentionally two Swift manifests:
-
-- the root [`Package.swift`](../Package.swift) is the public manifest. Its binary target uses the
-  versioned GitHub Release URL and exact checksum;
-- [`apple/swift-package/Package.swift`](../apple/swift-package/Package.swift) is a development
-  fixture. `prepareLocalSwiftPackage` copies it into `build/swift-package` with a path-based
-  XCFramework, facade sources, tests, and legal files.
-
-For each release, run the hosted Release candidate workflow on `main` first. Its Xcode 26.6 archive
-and checksum are the authoritative inputs for the root manifest. A local archive built by another
-Xcode version is useful as a preflight, but is not a substitute for the hosted candidate. For
-`0.1.0`, the remote target is:
-
-```swift
-.binaryTarget(
-    name: "RRuleKmpCore",
-    url: "https://github.com/yannallain/rrule-kmp/releases/download/0.1.0/RRuleKmpCore-0.1.0.xcframework.zip",
-    checksum: "<hosted-candidate-checksum>"
-)
-```
-
-The protected release flow is deliberately staged:
-
-1. Dispatch the [Release candidate workflow](../.github/workflows/release-candidate.yml) for a
-   numeric three-part version from `main`. Download its deterministic XCFramework archive and
-   checksum produced with hosted Xcode 26.6.
-2. Put that exact release URL and checksum in the root manifest, update versioned documentation,
-   open a release-preparation pull request, and merge it only after every required CI job passes.
-3. Dispatch the protected [Release workflow](../.github/workflows/release.yml) for the same version
-   and green `main` commit. Its read-only build job reproduces and verifies every asset. Only its
-   protected publish job can create the tag, attest the assets, and publish the GitHub Release.
-   Review the staged artifact while that job waits for the `release` environment approval.
-4. The protected job explicitly dispatches the
-   [Distribution smoke workflow](../.github/workflows/distribution-smoke.yml) after publication.
-   It resolves the exact tag and release asset from clean Swift Package Manager caches and builds
-   generic simulator and device consumers.
-5. Keep the real iOS 13 runtime/device result with the release evidence. Hosted compile, link, and
-   metadata checks do not yet prove execution on iOS 13 itself.
-
-The public release includes `RRuleKmpCore-<version>.xcframework.zip`, `SHA256SUMS`, the project
-licence and third-party notices, and a complete licence archive. The generated local package also
-carries [`LICENSE`](../LICENSE), [`THIRD_PARTY_NOTICES`](../THIRD_PARTY_NOTICES), and
-[`LICENSES`](../LICENSES). These files provide the release inputs; their contents still require
-the project owner's final review before approving publication.
-
-The packaging follows the stable Objective-C framework/XCFramework route. Kotlin's direct Swift
-export remains experimental and is not used for the production surface. See Kotlin's
-[native binary](https://kotlinlang.org/docs/multiplatform/multiplatform-build-native-binaries.html),
-[Swift Package export](https://kotlinlang.org/docs/multiplatform/multiplatform-spm-export.html), and
-[Objective-C/Swift interop](https://kotlinlang.org/docs/native-objc-interop.html) documentation, plus
-Apple's [binary Swift Package guidance](https://developer.apple.com/documentation/xcode/distributing-binary-frameworks-as-swift-packages).
+`RRuleKit` intentionally uses the stable Objective-C framework/XCFramework route. Kotlin's
+[direct Swift export](https://kotlinlang.org/docs/native-swift-export.html) remains Alpha and
+incomplete, so it is not part of the supported production surface.
