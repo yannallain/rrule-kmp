@@ -150,15 +150,31 @@ gh attestation verify RRuleKmpCore-0.1.0.xcframework.zip \
   --repo yannallain/rrule-kmp
 ```
 
-The generated notes remain editable after publication. If publication stops
-after creating the tag but before completing the release, rerun the workflow
-with `recovery_sha` set to the exact tagged commit. Historical commits are
-accepted only when the same version tag already targets that commit. If the
-release already became public before a runner lost its response, a rerun
-downloads it and verifies its asset set and checksums without replacing it.
-Reproducible binaries, legal files, and package metadata must match the rebuilt
-bundle; the original hosted toolchain record remains release evidence and is
-not expected to equal a later runner image record.
+The generated notes remain editable after publication. If the runner stops
+while uploading and leaves an untagged draft, rerun the normal workflow from
+`main` while that verified commit is still current. The workflow finds the
+private draft, verifies its target commit, replaces its partial asset set, and
+publishes it.
+
+If publication stops after creating the tag, or `main` advances afterward,
+rerun the workflow from the existing numeric version tag with `recovery_sha`
+set to that tag's exact 40-character commit SHA. Selecting the tag is mandatory
+for historical recovery: it keeps the workflow source commit, rebuilt
+artifacts, and provenance attestation aligned. For example:
+
+```shell
+gh workflow run release.yml \
+  --ref 0.1.0 \
+  -f version=0.1.0 \
+  -f recovery_sha='<exact-tag-commit-sha>'
+```
+
+Historical commits are accepted only when the same version tag already targets
+that commit. If the release already became public before a runner lost its
+response, a rerun downloads it and verifies its asset set and checksums without
+replacing it. Reproducible binaries, legal files, and package metadata must
+match the rebuilt bundle; the original hosted toolchain record remains release
+evidence and is not expected to equal a later runner image record.
 
 ## 4. Verify public distribution
 

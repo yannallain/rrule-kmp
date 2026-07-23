@@ -161,6 +161,47 @@ internal class PeriodGenerator(
         return candidateCount(periodIndex = 0L)
     }
 
+    /**
+     * Returns the number of periods in one exact Gregorian candidate-count cycle.
+     *
+     * The first period is handled separately because `DTSTART` can truncate it. Periods after the
+     * first repeat once their anchor advances by 400 Gregorian years. Near the RFC year ceiling a
+     * complete cycle may not fit; callers then retain their bounded scan fallback.
+     */
+    fun calendarCandidateCountCycleShapeAfterFirstPeriod(): CalendarPeriodCountCycleShape? {
+        if (!supportsCandidateIndexing) return null
+        val cycleUnits: Long
+        val periodsPerBlock: Int
+        when (rule.frequency) {
+            Frequency.DAILY -> {
+                cycleUnits = GREGORIAN_CYCLE_DAYS
+                periodsPerBlock = 366
+            }
+            Frequency.WEEKLY -> {
+                cycleUnits = GREGORIAN_CYCLE_WEEKS
+                periodsPerBlock = 53
+            }
+            Frequency.MONTHLY -> {
+                cycleUnits = GREGORIAN_CYCLE_MONTHS
+                periodsPerBlock = 12
+            }
+            Frequency.YEARLY -> {
+                cycleUnits = GREGORIAN_CYCLE_YEARS
+                periodsPerBlock = 1
+            }
+            Frequency.HOURLY, Frequency.MINUTELY, Frequency.SECONDLY -> return null
+        }
+        val periodCount = cycleUnits / greatestCommonDivisor(
+            rule.interval.toLong() % cycleUnits,
+            cycleUnits,
+        )
+        if (periodCount >= Int.MAX_VALUE || anchor(periodCount) == null) return null
+        return CalendarPeriodCountCycleShape(
+            periodCount = periodCount.toInt(),
+            periodsPerBlock = periodsPerBlock,
+        )
+    }
+
     private fun candidateSpace(periodIndex: Long): CountedCandidateSpace? {
         val anchor = anchor(periodIndex) ?: return null
         val dates = datesFor(anchor).filter { it.year in 0..9999 && matchesDate(it, anchor.periodYear) }
@@ -549,6 +590,9 @@ internal class PeriodGenerator(
     }
 
     private companion object {
+        const val GREGORIAN_CYCLE_YEARS: Long = 400L
+        const val GREGORIAN_CYCLE_MONTHS: Long = 4_800L
+        const val GREGORIAN_CYCLE_WEEKS: Long = 20_871L
         const val GREGORIAN_CYCLE_DAYS: Long = 146_097L
     }
 }

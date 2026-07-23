@@ -108,6 +108,40 @@ internal class TemporalSupport(
         else -> incompatible(right)
     }
 
+    /**
+     * Binds a query bound once and returns a comparator for already resolved occurrences.
+     *
+     * Zoned query values can require resolver work. Binding the bound outside an occurrence loop
+     * avoids resolving both the occurrence and the same bound again for every comparison.
+     */
+    fun occurrenceComparatorFor(bound: RecurrenceDateTime): (ResolvedOccurrence) -> Int =
+        when (start) {
+            is RecurrenceDateTime.DateOnly -> {
+                if (bound !is RecurrenceDateTime.DateOnly) incompatible(bound)
+                val comparator: (ResolvedOccurrence) -> Int = { occurrence ->
+                    checkNotNull(occurrence.date).compareTo(bound.date)
+                }
+                comparator
+            }
+            is RecurrenceDateTime.Floating -> {
+                if (bound !is RecurrenceDateTime.Floating) incompatible(bound)
+                val comparator: (ResolvedOccurrence) -> Int = { occurrence ->
+                    checkNotNull(occurrence.dateTime).compareTo(bound.dateTime)
+                }
+                comparator
+            }
+            is RecurrenceDateTime.Utc,
+            is RecurrenceDateTime.Zoned,
+            -> {
+                if (!bound.isAbsolute()) incompatible(bound)
+                val boundInstant = absoluteInstant(bound)
+                val comparator: (ResolvedOccurrence) -> Int = { occurrence ->
+                    checkNotNull(occurrence.instant).compareTo(boundInstant)
+                }
+                comparator
+            }
+        }
+
     fun localValueForLowerBound(value: RecurrenceDateTime): LocalValue? = when (start) {
         is RecurrenceDateTime.DateOnly -> {
             if (value !is RecurrenceDateTime.DateOnly) incompatible(value)

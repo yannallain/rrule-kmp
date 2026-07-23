@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       recovery_sha:
-        description: Optional exact commit SHA for recovering an existing release tag
+        description: Optional exact SHA; dispatch from the existing version tag for recovery
         required: false
         type: string
 
@@ -35,7 +35,7 @@ jobs:
       - name: Check out the requested commit
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ inputs.recovery_sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
@@ -50,18 +50,23 @@ jobs:
             echo "Release versions must use numeric SemVer, for example 0.1.0." >&2
             exit 1
           fi
-          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "Releases must be dispatched from the main branch." >&2
-            exit 1
-          fi
-
           requested_sha="$GITHUB_SHA"
           if [[ -n "$RECOVERY_SHA" ]]; then
             if [[ ! "$RECOVERY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
               echo "A recovery SHA must be an exact 40-character lowercase commit SHA." >&2
               exit 1
             fi
-            requested_sha="$RECOVERY_SHA"
+            if [[ "$GITHUB_REF" != "refs/tags/$RELEASE_VERSION" ]]; then
+              echo "Recovery must be dispatched from tag $RELEASE_VERSION." >&2
+              exit 1
+            fi
+            if [[ "$RECOVERY_SHA" != "$GITHUB_SHA" ]]; then
+              echo "The recovery SHA must equal the selected tag's workflow SHA." >&2
+              exit 1
+            fi
+          elif [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "New releases must be dispatched from the main branch." >&2
+            exit 1
           fi
 
           checked_out_sha="$(git rev-parse HEAD)"
@@ -112,13 +117,24 @@ jobs:
           fi
 
           existing_release="$(
-            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION" \
-              2>/dev/null || true
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+              --slurp \
+              --jq \
+              "[.[][] | select(.tag_name == \"$RELEASE_VERSION\")] | first // empty"
           )"
           if [[ -n "$existing_release" ]]; then
             if [[ -z "$tag_ref" ]]; then
-              echo "Release $RELEASE_VERSION has no matching tag." >&2
-              exit 1
+              if [[ "$(jq -r '.draft' <<< "$existing_release")" != "true" ]]; then
+                echo "Public release $RELEASE_VERSION has no matching tag." >&2
+                exit 1
+              fi
+              draft_target="$(jq -r '.target_commitish' <<< "$existing_release")"
+              if [[ "$main_sha" != "$checked_out_sha" ]] || \
+                 [[ "$draft_target" != "$checked_out_sha" ]]; then
+                echo "An untagged draft can only resume from its current-main target." >&2
+                exit 1
+              fi
             fi
             if [[ "$(jq -r '.draft' <<< "$existing_release")" == "false" ]]; then
               echo "The exact release is already public; verifying it idempotently."
@@ -345,6 +361,13 @@ jobs:
           cd release-assets
           shasum -a 256 -c SHA256SUMS
 
+      - name: Verify the attestation source commit
+        run: |
+          if [[ "$GITHUB_SHA" != "$RELEASE_SHA" ]]; then
+            echo "The workflow commit does not match the verified release commit." >&2
+            exit 1
+          fi
+
       - name: Attest release artifacts
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4
         with:
@@ -381,9 +404,24 @@ jobs:
           fi
 
           existing_release="$(
-            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION" \
-              2>/dev/null || true
+            gh api --paginate \
+              "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+              --slurp \
+              --jq \
+              "[.[][] | select(.tag_name == \"$RELEASE_VERSION\")] | first // empty"
           )"
+          if [[ -n "$existing_release" && -z "$tag_ref" ]]; then
+            if [[ "$(jq -r '.draft' <<< "$existing_release")" != "true" ]]; then
+              echo "Public release $RELEASE_VERSION has no matching tag." >&2
+              exit 1
+            fi
+            draft_target="$(jq -r '.target_commitish' <<< "$existing_release")"
+            if [[ "$main_sha" != "$RELEASE_SHA" ]] || \
+               [[ "$draft_target" != "$RELEASE_SHA" ]]; then
+              echo "An untagged draft can only resume from its current-main target." >&2
+              exit 1
+            fi
+          fi
 
           assets=(
             "release-assets/RRuleKmpCore-$RELEASE_VERSION.xcframework.zip"

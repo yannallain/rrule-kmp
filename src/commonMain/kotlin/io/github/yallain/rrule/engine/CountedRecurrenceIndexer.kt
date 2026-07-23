@@ -11,6 +11,7 @@ import kotlinx.datetime.toLocalDateTime
  * A linear temporal domain can use the raw local-candidate count directly. A transition-aware
  * zoned domain supplies every nonexistent local-time range through the query bound; candidates in
  * those gaps are removed from the occurrence ordinal space. Overlaps do not change cardinality.
+ * Variable calendar-period counts are indexed through their exact 400-year Gregorian cycle.
  *
  * `BYSETPOS` retains the general scan because its post-resolution semantics cannot be represented
  * by this prefix index.
@@ -22,9 +23,31 @@ internal class CountedRecurrenceIndexer(
     private val countLimit: Long,
     private val periodFloor: (LocalValue) -> Long,
     private val periodCeiling: (LocalValue) -> Long,
+    calendarCandidateCountCycleShape: CalendarPeriodCountCycleShape? = null,
     private val nonexistentRangesThrough: ((LocalDateTime) -> List<NonexistentLocalTimeRange>)? = null,
 ) {
     private val constantCountAfterFirstPeriod = generator.constantCandidateCountAfterFirstPeriod()
+    private val calendarPeriodCountIndex: CalendarPeriodCountIndex? =
+        calendarCandidateCountCycleShape
+            ?.takeIf { constantCountAfterFirstPeriod == null }
+            ?.let { cycleShape ->
+                CalendarPeriodCountIndex(
+                    shape = cycleShape,
+                    candidateCountAtOffset = { periodOffset -> periodCount(periodOffset + 1L) },
+                )
+            }
+    private val hasTransitionAwareCardinality: Boolean = nonexistentRangesThrough != null
+    private val finiteTransitionCountPrefixIndex: FiniteTransitionCountPrefixIndex? =
+        if (hasTransitionAwareCardinality) {
+            FiniteTransitionCountPrefixIndex(
+                countLimit = countLimit,
+                maximumPeriodIndex = periodCeiling,
+                rawCandidateAtOrdinalThroughPeriod = ::rawCandidateAtOrdinalThroughPeriod,
+                uncachedPrefixThrough = ::prefixThroughUncached,
+            )
+        } else {
+            null
+        }
 
     fun forwardStart(periodIndex: Long, lowerBound: LocalValue): CountedForwardStart? {
         val occurrenceCount = prefixThrough(lowerBound, inclusive = false)?.occurrenceCount
@@ -36,6 +59,13 @@ internal class CountedRecurrenceIndexer(
     }
 
     fun prefixThrough(
+        upperBound: LocalValue,
+        inclusive: Boolean,
+    ): CountedOccurrencePrefix? =
+        finiteTransitionCountPrefixIndex?.prefixThrough(upperBound, inclusive)
+            ?: prefixThroughUncached(upperBound, inclusive)
+
+    private fun prefixThroughUncached(
         upperBound: LocalValue,
         inclusive: Boolean,
     ): CountedOccurrencePrefix? {
@@ -56,7 +86,13 @@ internal class CountedRecurrenceIndexer(
         )
     }
 
-    private fun rawCandidateAtOrdinal(oneBasedOrdinal: Long): LocalCandidate? {
+    private fun rawCandidateAtOrdinal(oneBasedOrdinal: Long): LocalCandidate? =
+        rawCandidateAtOrdinalThroughPeriod(oneBasedOrdinal, Long.MAX_VALUE)
+
+    private fun rawCandidateAtOrdinalThroughPeriod(
+        oneBasedOrdinal: Long,
+        maximumPeriodIndex: Long,
+    ): LocalCandidate? {
         if (oneBasedOrdinal <= 0L) return null
         val constantCount = constantCountAfterFirstPeriod
         if (constantCount != null) {
@@ -67,14 +103,38 @@ internal class CountedRecurrenceIndexer(
             if (constantCount == 0L) return null
             val remainingOrdinal = oneBasedOrdinal - firstPeriodCount
             val periodIndex = (remainingOrdinal - 1L) / constantCount + 1L
+            if (periodIndex > maximumPeriodIndex) return null
             val ordinalInPeriod = (remainingOrdinal - 1L) % constantCount + 1L
             return generator.candidateAt(periodIndex, ordinalInPeriod)
+        }
+
+        calendarPeriodCountIndex?.let { index ->
+            val firstPeriodCount = periodCount(0L) ?: return null
+            if (oneBasedOrdinal <= firstPeriodCount) {
+                return generator.candidateAt(0L, oneBasedOrdinal, startLocal)
+            }
+            if (maximumPeriodIndex <= 0L) return null
+            val maximumPeriodOffset = if (maximumPeriodIndex == Long.MAX_VALUE) {
+                Long.MAX_VALUE
+            } else {
+                maximumPeriodIndex - 1L
+            }
+            val location = index.locate(
+                oneBasedOrdinal = oneBasedOrdinal - firstPeriodCount,
+                maximumPeriodOffset = maximumPeriodOffset,
+            ) ?: return null
+            if (location.periodOffset == Long.MAX_VALUE) return null
+            return generator.candidateAt(
+                periodIndex = location.periodOffset + 1L,
+                ordinal = location.ordinalInPeriod,
+            )
         }
 
         if (!frequency.hasBoundedCalendarPeriodCount()) return null
         var emitted = 0L
         var periodIndex = 0L
         while (true) {
+            if (periodIndex > maximumPeriodIndex) return null
             val periodCount = periodCount(periodIndex) ?: return null
             if (oneBasedOrdinal - emitted <= periodCount) {
                 return generator.candidateAt(
@@ -95,6 +155,7 @@ internal class CountedRecurrenceIndexer(
     ): Long? {
         val firstPossiblyIntersectingPeriod = periodFloor(upperBound)
         var total = rawCandidateCountBeforePeriod(firstPossiblyIntersectingPeriod) ?: return null
+        if (!hasTransitionAwareCardinality && total >= countLimit) return countLimit
         var periodIndex = firstPossiblyIntersectingPeriod
         val finalPossiblyIntersectingPeriod = periodCeiling(upperBound)
         while (periodIndex <= finalPossiblyIntersectingPeriod) {
@@ -103,8 +164,13 @@ internal class CountedRecurrenceIndexer(
                 lowerBoundInclusive = startLocal.takeIf { periodIndex == 0L },
                 upperBound = upperBound,
                 upperInclusive = inclusive,
-            ) ?: return null
+            )
+            if (count == null) {
+                if (generator.periodStart(periodIndex) == null) break
+                return null
+            }
             total = saturatingAdd(total, count)
+            if (!hasTransitionAwareCardinality && total >= countLimit) return countLimit
             if (periodIndex == Long.MAX_VALUE) break
             periodIndex++
         }
@@ -114,12 +180,28 @@ internal class CountedRecurrenceIndexer(
     private fun rawCandidateCountBeforePeriod(exclusivePeriodIndex: Long): Long? {
         if (exclusivePeriodIndex <= 0L) return 0L
         val firstPeriodCount = periodCount(0L) ?: return null
+        if (!hasTransitionAwareCardinality && firstPeriodCount >= countLimit) return countLimit
         if (exclusivePeriodIndex == 1L) return firstPeriodCount
 
         constantCountAfterFirstPeriod?.let { constantCount ->
-            return saturatingAdd(
+            val count = saturatingAdd(
                 firstPeriodCount,
                 saturatingProduct(exclusivePeriodIndex - 1L, constantCount),
+            )
+            return if (hasTransitionAwareCardinality) count else minOf(count, countLimit)
+        }
+        calendarPeriodCountIndex?.let { index ->
+            val remainingLimit = if (hasTransitionAwareCardinality) {
+                null
+            } else {
+                countLimit - firstPeriodCount
+            }
+            return saturatingAdd(
+                firstPeriodCount,
+                index.countForPeriods(
+                    periods = exclusivePeriodIndex - 1L,
+                    maximumCount = remainingLimit,
+                ) ?: return null,
             )
         }
 
@@ -127,8 +209,12 @@ internal class CountedRecurrenceIndexer(
         var total = firstPeriodCount
         var periodIndex = 1L
         while (periodIndex < exclusivePeriodIndex && total < Long.MAX_VALUE) {
-            val periodCount = periodCount(periodIndex) ?: return total
+            val periodCount = periodCount(periodIndex)
+            if (periodCount == null) {
+                return if (generator.periodStart(periodIndex) == null) total else null
+            }
             total = saturatingAdd(total, periodCount)
+            if (!hasTransitionAwareCardinality && total >= countLimit) return countLimit
             periodIndex++
         }
         return total

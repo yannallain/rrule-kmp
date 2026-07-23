@@ -20,8 +20,9 @@ recurrence.
 - Dates before the Unix epoch and rules near RFC 5545's maximum four-digit year.
 - RRULE and recurrence-content parsing, validation, serialization, and round trips.
 - Iterator isolation, immutable public models, concurrency, and bounded-result safeguards.
-- Sparse and billion-scale counted-query performance paths, including transition-aware forward
-  and reverse lookup with indexed-versus-scan parity.
+- Sparse and billion-scale counted-query performance paths, including Gregorian-cycle
+  DAILY/WEEKLY/MONTHLY/YEARLY and `BYWEEKNO` prefixes, transition-aware forward and reverse
+  lookup, count-exhaustion short circuits, and indexed-versus-scan parity.
 
 Focused regressions live under `src/commonTest/kotlin/io/github/yallain/rrule/regression`. Additional
 RFC examples, generated properties, timezone matrices, parser tests, and recurrence-set algebra are

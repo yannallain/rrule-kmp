@@ -177,6 +177,87 @@ class CountedQueryIndexingTest {
     }
 
     @Test
+    fun variableCalendarPrefixesMatchUncountedFarWindowOracles() {
+        val start = floating(2000, 1, 1, 9, 0, 0)
+        val windowStart = floating(2500, 1, 1, 0, 0, 0)
+        val windowEnd = floating(2501, 1, 1, 0, 0, 0)
+        val rules = listOf(
+            RecurrenceRule(
+                frequency = Frequency.DAILY,
+                count = 2_000_000_000,
+                byMonth = setOf(2, 3),
+                byMonthDay = setOf(1, 29, 31),
+            ),
+            RecurrenceRule(
+                frequency = Frequency.WEEKLY,
+                count = 2_000_000_000,
+                byDay = listOf(ByDay(Weekday.MONDAY), ByDay(Weekday.THURSDAY)),
+            ),
+            RecurrenceRule(
+                frequency = Frequency.MONTHLY,
+                count = 2_000_000_000,
+                byMonthDay = setOf(29, 30, 31),
+            ),
+            RecurrenceRule(
+                frequency = Frequency.YEARLY,
+                count = 2_000_000_000,
+                byMonth = setOf(2, 3),
+                byMonthDay = setOf(29, 31),
+            ),
+            RecurrenceRule(
+                frequency = Frequency.YEARLY,
+                count = 2_000_000_000,
+                byWeekNumber = setOf(1, 13, 53, -1),
+                byDay = listOf(ByDay(Weekday.MONDAY), ByDay(Weekday.SUNDAY)),
+            ),
+        )
+
+        rules.forEach { rule ->
+            val counted = RuleRecurrence(start, rule)
+            val oracle = RuleRecurrence(start, rule.copy(count = null))
+            assertEquals(
+                oracle.between(windowStart, windowEnd),
+                counted.between(windowStart, windowEnd),
+                "${rule.frequency} forward window",
+            )
+            assertEquals(
+                oracle.before(windowEnd),
+                counted.before(windowEnd),
+                "${rule.frequency} reverse lookup",
+            )
+        }
+    }
+
+    @Test
+    fun smallCalendarCountsExhaustWithoutReplayingToTheQueryYear() {
+        val start = floating(2000, 1, 1, 9, 0, 0)
+        val distantQuery = floating(9000, 1, 1, 0, 0, 0)
+        val cases = listOf(
+            RecurrenceRule(Frequency.DAILY, count = 1, byMonth = setOf(1)),
+            RecurrenceRule(
+                Frequency.WEEKLY,
+                count = 1,
+                byDay = listOf(ByDay(Weekday.SATURDAY)),
+            ),
+            RecurrenceRule(Frequency.MONTHLY, count = 1, byMonthDay = setOf(1)),
+            RecurrenceRule(Frequency.YEARLY, count = 1, byMonth = setOf(1)),
+            RecurrenceRule(
+                Frequency.YEARLY,
+                count = 1,
+                byWeekNumber = setOf(1),
+                byDay = listOf(ByDay(Weekday.SATURDAY)),
+            ),
+        )
+
+        cases.forEach { rule ->
+            val recurrence = RuleRecurrence(start, rule)
+            val expected = RuleRecurrence(start, rule.copy(count = null)).occurrences().first()
+            assertEquals(expected, recurrence.before(distantQuery), "${rule.frequency} before")
+            assertNull(recurrence.after(distantQuery), "${rule.frequency} after")
+        }
+    }
+
+    @Test
     fun reverseQueryJumpsDirectlyToTheFinalCountedOccurrence() {
         val resolver = CountingLinearResolver()
         val recurrence = RuleRecurrence(

@@ -169,8 +169,8 @@ class TransitionZoneCountedQueryIndexingTest {
     }
 
     @Test
-    fun variableCalendarPrefixKeepsTheSingleScanFallback() {
-        val resolver = CountingGapAwareResolver()
+    fun variableCalendarPrefixWithResolveOnlyResolverKeepsTheSingleScanFallback() {
+        val resolver = CountingResolveOnlyResolver()
         val recurrence = RuleRecurrence(
             start = zoned(2000, 1, 1, timeZoneId = PARIS),
             rule = RecurrenceRule(
@@ -187,7 +187,6 @@ class TransitionZoneCountedQueryIndexingTest {
             recurrence.before(zoned(2050, 1, 1, timeZoneId = PARIS)),
         )
         resolver.assertWithinBudgets()
-        resolver.assertNoGapQueries()
     }
 
     private class CountingGapAwareResolver(
@@ -236,9 +235,33 @@ class TransitionZoneCountedQueryIndexingTest {
             assertTrue(resolutionCount <= maximumResolutionCount)
             assertTrue(gapQueryCount <= maximumGapQueryCount)
         }
+    }
 
-        fun assertNoGapQueries() {
-            assertEquals(0, gapQueryCount)
+    private class CountingResolveOnlyResolver(
+        private val maximumResolutionCount: Int = 80,
+    ) : RecurrenceTimeZoneResolver {
+        private var resolutionCount: Int = 0
+
+        override fun resolve(localDateTime: LocalDateTime, timeZoneId: String): LocalTimeResolution {
+            resolutionCount++
+            check(resolutionCount <= maximumResolutionCount) {
+                "Resolve-only query exceeded the $maximumResolutionCount-resolution budget"
+            }
+            return KotlinxRecurrenceTimeZoneResolver.resolve(localDateTime, timeZoneId)
+        }
+
+        override fun localDateTimeAt(instant: Instant, timeZoneId: String): LocalDateTime =
+            KotlinxRecurrenceTimeZoneResolver.localDateTimeAt(instant, timeZoneId)
+
+        override fun nonexistentInstant(localDateTime: LocalDateTime, timeZoneId: String): Instant =
+            KotlinxRecurrenceTimeZoneResolver.nonexistentInstant(localDateTime, timeZoneId)
+
+        fun resetBudgets() {
+            resolutionCount = 0
+        }
+
+        fun assertWithinBudgets() {
+            assertTrue(resolutionCount <= maximumResolutionCount)
         }
     }
 

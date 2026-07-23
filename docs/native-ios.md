@@ -222,20 +222,20 @@ The protected release flow is deliberately staged:
    commit the changes, push `main`, and wait for every required CI job to pass.
 3. Dispatch the protected [Release workflow](../.github/workflows/release.yml) for the same version
    and green `main` commit. Its read-only build job reproduces and verifies every asset. Only its
-   protected publish job can create the tag, attest the assets, and open the **draft** GitHub
-   Release.
-4. Review and publish the draft. Publishing starts the
-   [Distribution smoke workflow](../.github/workflows/distribution-smoke.yml), which resolves the
-   exact tag and release asset from clean Swift Package Manager caches and builds generic simulator
-   and device consumers.
+   protected publish job can create the tag, attest the assets, and publish the GitHub Release.
+   Review the staged artifact while that job waits for the `release` environment approval.
+4. The protected job explicitly dispatches the
+   [Distribution smoke workflow](../.github/workflows/distribution-smoke.yml) after publication.
+   It resolves the exact tag and release asset from clean Swift Package Manager caches and builds
+   generic simulator and device consumers.
 5. Keep the real iOS 13 runtime/device result with the release evidence. Hosted compile, link, and
    metadata checks do not yet prove execution on iOS 13 itself.
 
-The draft includes `RRuleKmpCore-<version>.xcframework.zip`, `SHA256SUMS`, the project licence and
-third-party notices, and a complete licence archive. The generated local package also carries
-[`LICENSE`](../LICENSE), [`THIRD_PARTY_NOTICES`](../THIRD_PARTY_NOTICES), and [`LICENSES`](../LICENSES).
-These files provide the release inputs; their contents still require the project owner's final
-review before publication.
+The public release includes `RRuleKmpCore-<version>.xcframework.zip`, `SHA256SUMS`, the project
+licence and third-party notices, and a complete licence archive. The generated local package also
+carries [`LICENSE`](../LICENSE), [`THIRD_PARTY_NOTICES`](../THIRD_PARTY_NOTICES), and
+[`LICENSES`](../LICENSES). These files provide the release inputs; their contents still require
+the project owner's final review before approving publication.
 
 The packaging follows the stable Objective-C framework/XCFramework route. Kotlin's direct Swift
 export remains experimental and is not used for the production surface. See Kotlin's

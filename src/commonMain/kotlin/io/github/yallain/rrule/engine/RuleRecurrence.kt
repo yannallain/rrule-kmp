@@ -23,15 +23,27 @@ public class RuleRecurrence(
         RecurrenceRuleValidator.validateForStart(rule, start)
         temporal.validateStart()
         generator = PeriodGenerator(temporal.startDate, temporal.startDateTime, rule)
-        val canIndexCount = rule.count != null &&
-            rule.byWeekNumber.isEmpty() &&
-            generator.supportsCandidateIndexing
+        val canIndexCount = rule.count != null && generator.supportsCandidateIndexing
         val hasLinearTimeline = canIndexCount && hasLinearCandidateTimeline()
-        val hasConstantTransitionPrefix = canIndexCount &&
-            !hasLinearTimeline &&
-            generator.constantCandidateCountAfterFirstPeriod() != null
+        val constantCandidateCountAfterFirstPeriod = if (canIndexCount) {
+            generator.constantCandidateCountAfterFirstPeriod()
+        } else {
+            null
+        }
+        val calendarCandidateCountCycleShape = if (
+            canIndexCount && constantCandidateCountAfterFirstPeriod == null
+        ) {
+            generator.calendarCandidateCountCycleShapeAfterFirstPeriod()
+        } else {
+            null
+        }
+        val hasIndexableTransitionPrefix =
+            canIndexCount && !hasLinearTimeline && (
+                constantCandidateCountAfterFirstPeriod != null ||
+                    calendarCandidateCountCycleShape != null
+            )
         val nonexistentRangesThrough = if (
-            canIndexCount && !hasLinearTimeline && hasConstantTransitionPrefix
+            canIndexCount && !hasLinearTimeline && hasIndexableTransitionPrefix
         ) {
             nonexistentRangesThrough()
         } else {
@@ -48,6 +60,7 @@ public class RuleRecurrence(
                 countLimit = checkNotNull(rule.count).toLong(),
                 periodFloor = ::periodSearchStart,
                 periodCeiling = ::periodCeiling,
+                calendarCandidateCountCycleShape = calendarCandidateCountCycleShape,
                 nonexistentRangesThrough = nonexistentRangesThrough,
             )
         } else {
@@ -180,6 +193,8 @@ public class RuleRecurrence(
             upperLocal?.let(::add)
             untilLocal?.let(::add)
         }.minOrNull()
+        val lowerBoundComparator = lowerBound?.let(temporal::occurrenceComparatorFor)
+        val upperBoundComparator = upperBound?.let(temporal::occurrenceComparatorFor)
         return sequence {
             var periodIndex = initialPeriod
             var emitted = countedForwardStart?.emittedBeforeLowerBound ?: 0L
@@ -219,12 +234,13 @@ public class RuleRecurrence(
                         ?: continue
                     if (temporal.isBeforeStart(occurrence)) continue
                     if (until != null && temporal.isAfterUntil(occurrence, until)) return@sequence
-                    if (upperBound != null) {
-                        val upperComparison = temporal.compare(occurrence.value, upperBound)
+                    if (upperBoundComparator != null) {
+                        val upperComparison = upperBoundComparator(occurrence)
                         if (upperComparison > 0 || upperComparison == 0 && !upperInclusive) return@sequence
                     }
                     emitted++
-                    val insideQuery = lowerBound == null || temporal.compare(occurrence.value, lowerBound) >= 0
+                    val insideQuery =
+                        lowerBoundComparator == null || lowerBoundComparator(occurrence) >= 0
                     if (insideQuery) yield(occurrence.value)
                     if (rule.count != null && emitted >= rule.count.toLong()) return@sequence
                 }
